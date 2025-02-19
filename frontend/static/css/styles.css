@@ -1,0 +1,74 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap");
+
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: #2c2e47;
+  color: white;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  margin-top: 20vh;
+}
+
+h1 {
+  font-size: 5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+h2 {
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin: 0;
+  margin-top: 10px;
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* Spread items: input on left, icon on right */
+  background-color: #89b4fa;
+  border-radius: 40px;
+  width: 80%;
+  margin: 20px auto;
+  padding: 10px 20px; /* Gives space on left and right edges */
+}
+
+.search-box input::placeholder {
+  color: #2c2e47;
+  opacity: 0.6; /* Optional: adjust placeholder visibility */
+}
+
+.search-box input {
+  color: 2c2e47;
+  flex: 1; /* Let the input grow to fill available space */
+  background-color: transparent;
+  border: none;
+  outline: none;
+  color: #252540;
+  font-size: 1rem;
+  /* If you want the text truly flush against the left edge,
+     reduce or remove the left padding from .search-box above. */
+}
+
+.search-box button {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* No extra margin so it sits snugly on the right */
+}
+
+/* If you're using an <img> for the icon, style it here */
+.search-box button img {
+  width: 20px;
+  height: 20px;
+  /* If the SVG supports fill via CSS (using fill="currentColor"), you can do:
+     fill: #252540;
+  */
+}
