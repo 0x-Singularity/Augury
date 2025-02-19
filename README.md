@@ -36,7 +36,7 @@ augury/
 
 ## Prerequisites
 
-1. **Go** (version 1.18 or higher is recommended)
+1. **Go** (I'm using version 1.23.2)
 2. **Python** (for Count Fakeula)
 3. **Gorilla Mux** for routing:
    ```bash
