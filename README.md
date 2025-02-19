@@ -37,7 +37,7 @@ augury/
 ## Prerequisites
 
 1. **Go** (version 1.18 or higher is recommended)
-2. **Python** (for your local IOC API, if applicable)
+2. **Python** (for Count Fakeula)
 3. **Gorilla Mux** for routing:
    ```bash
    go get github.com/gorilla/mux
