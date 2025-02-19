@@ -59,8 +59,9 @@ In the backend directory, run:
 
 ```bash
 air init
-This will generate an .air.toml configuration file. You can edit this file to customize the watch paths, build options, and other settings.
 ```
+
+This will generate an .air.toml configuration file. You can edit this file to customize the watch paths, build options, and other settings.
 
 Now run Air
 
