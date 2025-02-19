@@ -50,7 +50,7 @@ Air is a Go development tool that automatically rebuilds and restarts your appli
 ## Install Air
 
 ```bash
-go install github.com/cosmtrek/air@latest
+go install github.com/air-verse/air@latest
 ```
 
 ## Initialize Air
