@@ -4,11 +4,28 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
 
+	"github.com/0x-Singularity/Augury/models" // Import database models
+	"github.com/0x-Singularity/Augury/routes" // Import API routes
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+
+	// Load environment variables from .env
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: No .env file found, using system environment variables")
+	}
+
+	// Initialize Azure SQL database connection
+	err = models.ConnectDB()
+	if err != nil {
+		log.Fatal("Failed to connect to Azure SQL database:", err)
+	}
+
 	router := mux.NewRouter()
 
 	staticFileDirectory := http.Dir("../frontend/static")
@@ -29,6 +46,23 @@ func main() {
 		}
 	}).Methods("GET")
 
-	log.Println("Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	// Register API routes
+	routes.SetupRoutes(router)
+
+	// Start server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Println("Server running at http://localhost:" + port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
+
+	// Debugging: Print all registered routes
+	router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		path, err := route.GetPathTemplate()
+		if err == nil {
+			log.Println("Registered Route:", path)
+		}
+		return nil
+	})
 }
