@@ -4,11 +4,21 @@ import (
 	"html/template"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/0x-Singularity/Augury/routes"
 
 	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Load environment variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Println("Warning: No .env file found, using system environment variables")
+	}
+
 	router := mux.NewRouter()
 
 	staticFileDirectory := http.Dir("../frontend/static")
@@ -29,6 +39,14 @@ func main() {
 		}
 	}).Methods("GET")
 
-	log.Println("Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", router))
+	// Register FAKEula API routes
+	routes.SetupRoutes(router)
+
+	// Start the server
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	log.Println("Server running at http://localhost:" + port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
