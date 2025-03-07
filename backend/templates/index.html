@@ -10,17 +10,19 @@
       <h1>AUGURY</h1>
       <h2>IOC Intelligence</h2>
       <div class="search-box">
-        <input type="text" placeholder="Paste your IOCs here" />
-        <button type="button">
-          <img
-            src="/static/images/search.svg"
-            alt="Search Icon"
-            class="search-icon"
-          />
-        </button>
+        <form action="/api/ioc/fakeula" method="GET">
+          <!-- The name attribute here is crucial -->
+          <input type="text" name="ioc" placeholder="Paste your IOCs here" required />
+          <button type="submit">
+            <img
+              src="/static/images/search.svg"
+              alt="Search Icon"
+              class="search-icon"
+            />
+          </button>
+        </form>
       </div>
     </div>
-
     <script src="/static/js/scripts.js"></script>
   </body>
 </html>
