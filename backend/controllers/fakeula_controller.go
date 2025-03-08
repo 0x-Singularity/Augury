@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"github.com/0x-Singularity/Augury/backend/parser"
 	"encoding/json"
 	"fmt"
 	"log"
