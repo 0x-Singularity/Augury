@@ -1,16 +1,20 @@
 package controllers
 
 import (
-	"github.com/0x-Singularity/Augury/backend/parser"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/0x-Singularity/Augury/parser"
 )
 
 // FakeulaResponse represents the JSON response from FAKEula
-type FakeulaResponse map[string]interface{}
+//type FakeulaResponse map[string]interface{}
+
+// To the one below to just use the FakeulaResponse the Parser uses
+type FakeulaResponse = parser.FakeulaResponse
 
 // QueryFakeula calls the Count FAKEula API and returns results
 func QueryFakeula(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +72,11 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Pass the FAKEula response through the parser to format it better
+	formattedResponse := parser.FormatFakeulaResponse(response)
+	
+
 	// Return FAKEula response to client
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	json.NewEncoder(w).Encode(formattedResponse)
 }
