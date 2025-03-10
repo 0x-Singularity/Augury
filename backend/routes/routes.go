@@ -5,10 +5,12 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// SetupRoutes initializes all API routes
+// SetupRoutes registers API endpoints on the provided router
 func SetupRoutes(router *mux.Router) {
 	apiRouter := router.PathPrefix("/api").Subrouter()
 
-	// New FAKEula API route
+	// Map API paths to controller functions
+	apiRouter.HandleFunc("/ioc/lookup", controllers.LookupIOC).Methods("GET")
+	//apiRouter.HandleFunc("/ioc/log", controllers.LogIOC).Methods("POST")
 	apiRouter.HandleFunc("/ioc/fakeula", controllers.QueryFakeula).Methods("GET")
 }
