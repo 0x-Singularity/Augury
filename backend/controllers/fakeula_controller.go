@@ -11,8 +11,7 @@ import (
 )
 
 // FakeulaResponse represents the JSON response from FAKEula
-//type FakeulaResponse map[string]interface{}
-
+// Changed: type FakeulaResponse map[string]interface{}
 // To the one below to just use the FakeulaResponse the Parser uses
 type FakeulaResponse = parser.FakeulaResponse
 
@@ -74,7 +73,6 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 
 	// Pass the FAKEula response through the parser to format it better
 	formattedResponse := parser.FormatFakeulaResponse(response)
-	
 
 	// Return FAKEula response to client
 	w.Header().Set("Content-Type", "application/json")
