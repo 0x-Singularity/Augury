@@ -6,12 +6,15 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"reflect"
+
+	"github.com/0x-Singularity/Augury/models"
 )
 
 // FakeulaResponse represents the JSON response from FAKEula
 type FakeulaResponse map[string]interface{}
 
-// QueryFakeula calls the Count FAKEula API and returns results
+// QueryFakeula calls the Count FAKEula API and logs the query
 func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 	ioc := r.URL.Query().Get("ioc")
 	if ioc == "" {
@@ -67,7 +70,33 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Extract Result Count dynamically
+	resultCount := parseResultCount(response)
+
+	// Log the query in the database
+	userName := r.Header.Get("X-User-Name") // Example: Retrieve user from request headers
+	if userName == "" {
+		userName = "unknown"
+	}
+
+	err = models.InsertQueryLog(ioc, resultCount, userName)
+	if err != nil {
+		log.Println("Failed to log IOC lookup:", err)
+	}
+
 	// Return FAKEula response to client
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
+}
+
+// parseResultCount attempts to extract the number of results dynamically
+func parseResultCount(response FakeulaResponse) int {
+	for _, value := range response {
+		if reflect.TypeOf(value).Kind() == reflect.Slice {
+			if arr, ok := value.([]interface{}); ok {
+				return len(arr)
+			}
+		}
+	}
+	return 1 // Default to 1 if no array is found
 }

@@ -11,6 +11,6 @@ func SetupRoutes(router *mux.Router) {
 
 	// Map API paths to controller functions
 	apiRouter.HandleFunc("/ioc/lookup", controllers.LookupIOC).Methods("GET")
-	apiRouter.HandleFunc("/ioc/log", controllers.LogIOC).Methods("POST")
+	//apiRouter.HandleFunc("/ioc/log", controllers.LogIOC).Methods("POST")
 	apiRouter.HandleFunc("/ioc/fakeula", controllers.QueryFakeula).Methods("GET")
 }
