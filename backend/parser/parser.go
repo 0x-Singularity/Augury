@@ -7,8 +7,8 @@ import (
 // FakeulaResponse represents a parsed FAKEula response
 type FakeulaResponse map[string]interface{}
 
-// The hash map to store parsed results
-var resultsHashMap = make(map[string]FakeulaResponse)
+// Cache to store query results
+var resultsCache = make(map[string]FakeulaResponse)
 
 // FormatFakeulaResponse parses and structures the FAKEula response to make it more readable and easier for the front end to display
 func FormatFakeulaResponse(response FakeulaResponse) FakeulaResponse {
@@ -24,6 +24,7 @@ func FormatFakeulaResponse(response FakeulaResponse) FakeulaResponse {
 		for _, entry := range data {
 			if entryMap, ok := entry.(map[string]interface{}); ok {
 				parsedEntry := FakeulaResponse{
+					// Want to add an IOC field as well to organize queries with multiple IOCs in the input
 					"callerIpAddress":   entryMap["callerIpAddress"],
 					"coxAccountName":    entryMap["coxAccountName"],
 					"displayName":       entryMap["displayName"],
@@ -33,7 +34,9 @@ func FormatFakeulaResponse(response FakeulaResponse) FakeulaResponse {
 					"userPrincipalName": entryMap["userPrincipalName"],
 				}
 
-				// I don't know how much any of this is necessary tbh, I don't like this at all and feel it's very inefficient, definitely want to refactor later
+				// I don't know how much any of this is necessary tbh, I don't like this at all and feel it's very inefficient, definitely want to change in the future
+				// At first the results cache was not being filled with all the data returned in a FAKEula query, so I tried specifying fields for all the nested data,
+				// however it just became a ton of if statements, which look terrible and still don't seem to be storing everything properly
 
 				// Logic to handle nested client data
 				if client, ok := entryMap["client"].(map[string]interface{}); ok {
@@ -86,8 +89,9 @@ func FormatFakeulaResponse(response FakeulaResponse) FakeulaResponse {
 
 	// Store formatted response in cache
 	// %v converts formatted["formatted_data"] into a string regardless of type
-	hashKey := fmt.Sprintf("%v", formatted["formatted_data"])
-	resultsHashMap[hashKey] = formatted
+	// I'm trying to use the original results as the key value like Garret suggested, not sure if I'm doing that properly
+	cacheKey := fmt.Sprintf("%v", formatted["formatted_data"])
+	resultsCache[cacheKey] = formatted
 
 	// Temporary, prints the cache to the console to make sure the hash map is being occupied
 	fmt.Println("=== Cached response added ===")
@@ -97,23 +101,41 @@ func FormatFakeulaResponse(response FakeulaResponse) FakeulaResponse {
 }
 
 // ParseFakeulaResponse calls FormatFakeulaResponse and returns the parsed data
-func ParseFakeulaResponse(response FakeulaResponse) (FakeulaResponse, error) {
+/*func ParseFakeulaResponse(response FakeulaResponse) (FakeulaResponse, error) {
 	// Check if length of response map is 0
 	if len(response) == 0 {
 		return nil, fmt.Errorf("empty FAKEula response")
 	}
 	return FormatFakeulaResponse(response), nil
+}*/
+
+func ParseFakeulaResponse(response FakeulaResponse) (FakeulaResponse, error) {
+	// Check cache before processing
+	cacheKey := fmt.Sprintf("%v", response["data"])
+	if cachedResponse, found := resultsCache[cacheKey]; found {
+		fmt.Println("Returning cached response")
+		return cachedResponse, nil
+	}
+
+	// Process and store in cache
+	if len(response) == 0 {
+		return nil, fmt.Errorf("empty FAKEula response")
+	}
+
+	formatted := FormatFakeulaResponse(response)
+	resultsCache[cacheKey] = formatted
+	return formatted, nil
 }
 
-// Temp function to print the hash map to see if it is being occupied correctly
+// Temp function to print the cache to see if it is being occupied
 func PrintResultsCache() {
 	fmt.Println("=== Printing resultsCache ===")
-	if len(resultsHashMap) == 0 {
+	if len(resultsCache) == 0 {
 		fmt.Println("resultsCache is empty")
 		return
 	}
 
-	for key, value := range resultsHashMap {
+	for key, value := range resultsCache {
 		fmt.Printf("Key: %s\nValue: %+v\n\n", key, value)
 	}
 	fmt.Println("=== End of resultsCache ===")
