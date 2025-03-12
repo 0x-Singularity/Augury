@@ -5,9 +5,10 @@ import (
 )
 
 // FakeulaResponse represents a parsed FAKEula response
+// I should have picked a different name in hindsight
 type FakeulaResponse map[string]interface{}
 
-// Cache to store query results
+// Cache to store original fakeula results. Once these are formatted, the formatted data is stored in the fakeula response and returned
 var resultsCache = make(map[string]FakeulaResponse)
 
 // FormatFakeulaResponse parses and structures the FAKEula response to make it more readable and easier for the front end to display
