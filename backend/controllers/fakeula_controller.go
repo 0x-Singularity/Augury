@@ -1,8 +1,10 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -63,18 +65,21 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Decode JSON response
+	// Read the response body into a buffer
+	var buf bytes.Buffer
+	tee := io.TeeReader(resp.Body, &buf)
+
+	// Decode JSON response for result count
 	var response FakeulaResponse
-	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
-		http.Error(w, "Error processing response", http.StatusInternalServerError)
-		return
+	if err := json.NewDecoder(tee).Decode(&response); err != nil {
+		log.Println("Warning: Unable to parse FAKEula response for result count:", err)
 	}
 
 	// Extract Result Count dynamically
 	resultCount := parseResultCount(response)
 
 	// Log the query in the database
-	userName := r.Header.Get("X-User-Name") // Example: Retrieve user from request headers
+	userName := r.Header.Get("X-User-Name") // Retrieve user from request headers
 	if userName == "" {
 		userName = "unknown"
 	}
@@ -84,9 +89,13 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 		log.Println("Failed to log IOC lookup:", err)
 	}
 
-	// Return FAKEula response to client
+	// Set response headers and send raw JSON back to client
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(resp.StatusCode)
+	_, err = io.Copy(w, &buf)
+	if err != nil {
+		log.Println("Error writing response:", err)
+	}
 }
 
 // parseResultCount attempts to extract the number of results dynamically
