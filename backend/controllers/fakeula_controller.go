@@ -13,7 +13,7 @@ import (
 // FakeulaResponse represents the JSON response from FAKEula
 // Changed: type FakeulaResponse map[string]interface{}
 // To the one below to just use the FakeulaResponse the Parser uses
-type FakeulaResponse = parser.FakeulaResponse
+//type FakeulaResponse = parser.FakeulaResponse
 
 // QueryFakeula calls the Count FAKEula API and returns results
 func QueryFakeula(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +65,7 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Decode JSON response
-	var response FakeulaResponse
+	var response map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&response); err != nil {
 		http.Error(w, "Error processing response", http.StatusInternalServerError)
 		return
