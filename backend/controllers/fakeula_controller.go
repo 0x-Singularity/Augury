@@ -89,12 +89,26 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 		log.Println("Failed to log IOC lookup:", err)
 	}
 
-	// Set response headers and send raw JSON back to client
+	// Retrieve the stored IOC log
+	logEntry, err := models.GetQueryLog(ioc)
+	if err != nil {
+		log.Println("Failed to retrieve IOC log:", err)
+	}
+
+	// Append the logEntry to the response
+	if logEntry != nil {
+		response["query_log"] = logEntry
+	} else {
+		response["query_log"] = "No log found"
+	}
+
+	// Return updated JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(resp.StatusCode)
-	_, err = io.Copy(w, &buf)
-	if err != nil {
-		log.Println("Error writing response:", err)
+
+	// Encode modified response with appended log data
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Println("Error encoding response:", err)
 	}
 }
 

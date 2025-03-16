@@ -71,20 +71,32 @@ func InsertQueryLog(ioc string, resultCount int, userName string) error {
 }
 
 // GetQueryLog retrieves a log entry by IOC
-func GetQueryLog(ioc string) (*QueryLog, error) {
-	query := `SELECT TOP 1 log_id, ioc, last_lookup, result_count, user_name 
+func GetQueryLog(ioc string) ([]QueryLog, error) {
+	query := `SELECT TOP 3 log_id, ioc, last_lookup, result_count, user_name 
 	          FROM QueryLogs WHERE ioc = @ioc ORDER BY last_lookup DESC`
 
-	row := db.QueryRow(query, sql.Named("ioc", ioc))
-
-	var logEntry QueryLog
-	err := row.Scan(&logEntry.LogID, &logEntry.IOC, &logEntry.LastLookup, &logEntry.ResultCount, &logEntry.UserName)
+	rows, err := db.Query(query, sql.Named("ioc", ioc))
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil // No result found
-		}
-		log.Println("Error retrieving query log:", err)
+		log.Println("Error querying query logs:", err)
 		return nil, err
 	}
-	return &logEntry, nil
+	defer rows.Close()
+
+	var logs []QueryLog
+	for rows.Next() {
+		var logEntry QueryLog
+		if err := rows.Scan(&logEntry.LogID, &logEntry.IOC, &logEntry.LastLookup, &logEntry.ResultCount, &logEntry.UserName); err != nil {
+			log.Println("Error scanning query log row:", err)
+			return nil, err
+		}
+		logs = append(logs, logEntry)
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Println("Error iterating query log rows:", err)
+		return nil, err
+	}
+
+	// Return an empty slice instead of nil if no results found
+	return logs, nil
 }
