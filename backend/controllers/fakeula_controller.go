@@ -18,6 +18,18 @@ type FakeulaResponse map[string]interface{}
 
 // QueryFakeula calls the Count FAKEula API and logs the query
 func QueryFakeula(w http.ResponseWriter, r *http.Request) {
+
+	// Allow requests from any origin to allow react front end to access the query
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+	//  Handle OPTIONS preflight request
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	ioc := r.URL.Query().Get("ioc")
 	if ioc == "" {
 		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
