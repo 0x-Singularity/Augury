@@ -31,24 +31,31 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function createTab(ioc, data) {
+        console.log(`Creating tab for: ${ioc}`);
+    
         // Generate a unique tab ID
         const tabId = `tab-${ioc.replace(/[^a-zA-Z0-9]/g, "_")}`;
-
+    
         // Check if the tab already exists
-        if (document.getElementById(tabId)) {
+        let existingTab = document.getElementById(tabId);
+        if (existingTab) {
+            console.log(`Tab for ${ioc} already exists, switching to it.`);
             setActiveTab(tabId);
             return;
         }
-
-        // Create tab button
+    
+        console.log(`Creating new tab: ${tabId}`);
+    
+        // Create new tab button
         const tabButton = document.createElement("button");
         tabButton.innerText = ioc;
         tabButton.classList.add("tab-button");
         tabButton.onclick = function () {
+            console.log(`Switching to tab: ${tabId}`);
             setActiveTab(tabId);
         };
-
-        // Create tab content
+    
+        // Create new tab content
         const tabPanel = document.createElement("div");
         tabPanel.id = tabId;
         tabPanel.classList.add("tab-panel");
@@ -56,11 +63,13 @@ document.addEventListener("DOMContentLoaded", function () {
             <h3>Results for: ${ioc}</h3>
             <pre>${JSON.stringify(data, null, 2)}</pre>
         `;
-
+    
         // Append to UI
-        tabButtons.appendChild(tabButton);
-        tabContent.appendChild(tabPanel);
-
+        document.getElementById("tab-buttons").appendChild(tabButton);
+        document.getElementById("tab-content").appendChild(tabPanel);
+    
+        console.log(`Tab ${tabId} created successfully!`);
+    
         // Activate the new tab
         setActiveTab(tabId);
     }
