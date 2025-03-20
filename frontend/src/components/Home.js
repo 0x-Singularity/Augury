@@ -28,9 +28,7 @@ function Home() {
   };
 
   return (
-    <div className="container">
-      <h1>Search</h1>
-
+    <div className="container" style={{ marginTop: "40px"}}>
       <div className="search-box">
         <form onSubmit={handleSearch}>
           <input

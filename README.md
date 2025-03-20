@@ -121,5 +121,12 @@ This start the Augury backend server
 http:localhost:8080
 ```
 
+After we introduced react, instead of navigating to the backend directory and running main.go,
+we now navigate to the frontend directory and run
+
+```bash
+npm start
+```
+
 Enter an IOC into the search bar and click the magnifying glass
 You should recieve JSON as response

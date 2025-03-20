@@ -3,9 +3,10 @@ import Home from "./components/Home";
 
 function App() {
   return (
-    <div style={{ fontFamily: "Arial, sans-serif", padding: "20px" }}>
-      <h1>Search IOC</h1>
-      <Home />
+    <div style={{ fontFamily: "Poppins, sans-serif", padding: "200px", textAlign: "center" }}>
+    <h1 style={{ marginBottom: "10px" }}>AUGURY</h1>
+    <h2 style={{ marginBottom: "20px" }}>IOC Intelligence</h2>
+    <Home />
     </div>
   );
 }
