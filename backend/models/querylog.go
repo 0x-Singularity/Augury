@@ -72,8 +72,11 @@ func InsertQueryLog(ioc string, resultCount int, userName string) error {
 
 // GetQueryLog retrieves a log entry by IOC
 func GetQueryLog(ioc string) ([]QueryLog, error) {
-	query := `SELECT TOP 3 log_id, ioc, last_lookup, result_count, user_name 
-	          FROM QueryLogs WHERE ioc = @ioc ORDER BY last_lookup DESC`
+	query := `SELECT log_id, ioc, last_lookup, result_count, user_name
+	FROM QueryLogs
+	WHERE ioc = @ioc
+	ORDER BY last_lookup DESC
+	OFFSET 1 ROWS FETCH NEXT 3 ROWS ONLY;`
 
 	rows, err := db.Query(query, sql.Named("ioc", ioc))
 	if err != nil {

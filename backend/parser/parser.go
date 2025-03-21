@@ -155,7 +155,7 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 				}
 
 				// Extract keys for organizing the data in the MultiLevelMap
-				ioc := parsedEntry.CallerIpAddress
+				ioc := getString(entryMap, "key") //get ioc from the key since that is the queried IOC
 				oil := parsedEntry.Oil
 				source := getSource(entryMap)
 
