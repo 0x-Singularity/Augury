@@ -106,14 +106,30 @@ type PDNSInfo struct {
 	Answers []DNSAnswer `json:"answers"`
 }
 
+// result structure
+type ParsedFakeulaResult struct {
+	Data      MultiLevelMap              `json:"data"`
+	QueryLogs map[string][]QueryLogEntry `json:"queryLogs"`
+}
+
+// query log structure
+type QueryLogEntry struct {
+	LogID       int    `json:"log_id"`
+	IOC         string `json:"ioc"`
+	LastLookup  string `json:"last_lookup"`
+	ResultCount int    `json:"result_count"`
+	UserName    string `json:"user_name"`
+}
+
 //--------------------Functions to parse and format the FAKEula response---------------------------------------------------------------------
 
 // Global cache variable to store parsed results to avoid re-parsing
 var resultsCache = make(ResultsCache)
 
 // FormatFakeulaResponse parses and organizes the FAKEula response
-func FormatFakeulaResponse(response map[string]interface{}) MultiLevelMap {
+func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult {
 	var parsedData = make(MultiLevelMap)
+	queryLogs := make(map[string][]QueryLogEntry)
 
 	// Check if "data" field exists in response
 	if data, exists := response["data"].([]interface{}); exists {
@@ -164,19 +180,37 @@ func FormatFakeulaResponse(response map[string]interface{}) MultiLevelMap {
 		}
 	}
 
+	// Parse "query_log"
+	if qlogData, exists := response["query_log"].([]interface{}); exists {
+		for _, entry := range qlogData {
+			if entryMap, ok := entry.(map[string]interface{}); ok {
+				ioc := getString(entryMap, "ioc")
+				qlog := QueryLogEntry{
+					LogID:       getInt(entryMap, "log_id"),
+					IOC:         ioc,
+					LastLookup:  getString(entryMap, "last_lookup"),
+					ResultCount: getInt(entryMap, "result_count"),
+					UserName:    getString(entryMap, "user_name"),
+				}
+				queryLogs[ioc] = append(queryLogs[ioc], qlog)
+			}
+		}
+	}
+
 	// Store the parsed data in the cache using the original data as the key
 	cacheKey, err := json.Marshal(response["data"])
-	if err != nil {
-		fmt.Println("Error marshalling cache key:", err)
-		return parsedData
+	if err == nil {
+		resultsCache[string(cacheKey)] = parsedData
 	}
-	resultsCache[string(cacheKey)] = parsedData
 
 	// Print cache for debugging
 	//fmt.Println("=== Cached response added ===")
 	//PrintResultsCache()
 
-	return parsedData
+	return ParsedFakeulaResult{
+		Data:      parsedData,
+		QueryLogs: queryLogs,
+	}
 }
 
 // ------------------------------------------------Helper functions to parse nested data for each endpoint in FAKEula----------------------------------------------

@@ -106,9 +106,12 @@ func QueryFakeula(w http.ResponseWriter, r *http.Request) {
 
 	//  Append query log to the response
 	if logEntry != nil {
-		response["query_log"] = logEntry
+		var genericLogs []interface{}
+		tmp, _ := json.Marshal(logEntry)
+		_ = json.Unmarshal(tmp, &genericLogs)
+		response["query_log"] = genericLogs
 	} else {
-		response["query_log"] = "No log found"
+		response["query_log"] = []interface{}{}
 	}
 
 	//  Pass the FAKEula response through the parser
