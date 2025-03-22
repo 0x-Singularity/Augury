@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+import Results from "./Results"; 
+
 <img src="/search.svg" alt="Search" />
 
 
@@ -48,7 +50,17 @@ function Home() {
       {results && (
         <div style={{ marginTop: "20px" }}>
           <h3>Results:</h3>
-          <pre>{JSON.stringify(results, null, 2)}</pre>
+          {results && !results.error && (
+  <div style={{ marginTop: "20px" }}>
+    <h3>Results:</h3>
+    <Results results={results} />
+  </div>
+)}
+
+{results?.error && (
+  <p style={{ color: "red", marginTop: "20px" }}>{results.error}</p>
+)}
+
         </div>
       )}
     </div>
