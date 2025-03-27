@@ -10,24 +10,33 @@ function Home() {
   const [loading, setLoading] = useState(false);
 
   const handleSearch = async (e) => {
-    e.preventDefault(); // Prevent form submission from reloading the page
+    e.preventDefault();
     if (!query) return;
-    
+  
     setLoading(true);
-    
+  
     try {
-      const response = await fetch(`http://localhost:8080/api/ioc/fakeula?ioc=${query}`);
+      const response = await fetch("http://localhost:8080/api/ioc/extract", {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+          "X-User-Name": "demo_user", // You can set this dynamically in future
+        },
+        body: query,
+      });
+  
       if (!response.ok) throw new Error("Failed to fetch data");
-      
+  
       const data = await response.json();
       setResults(data);
     } catch (error) {
       console.error("Error fetching query:", error);
       setResults({ error: "Failed to fetch results" });
     }
-    
+  
     setLoading(false);
   };
+  
 
   return (
     <div className="container" style={{ marginTop: "40px"}}>
@@ -49,7 +58,6 @@ function Home() {
 
       {results && (
         <div style={{ marginTop: "20px" }}>
-          <h3>Results:</h3>
           {results && !results.error && (
   <div style={{ marginTop: "20px" }}>
     <h3>Results:</h3>

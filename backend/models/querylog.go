@@ -76,7 +76,7 @@ func GetQueryLog(ioc string) ([]QueryLog, error) {
 	FROM QueryLogs
 	WHERE ioc = @ioc
 	ORDER BY last_lookup DESC
-	OFFSET 1 ROWS FETCH NEXT 3 ROWS ONLY;`
+	OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;`
 
 	rows, err := db.Query(query, sql.Named("ioc", ioc))
 	if err != nil {

@@ -1,70 +1,117 @@
 import React from "react";
 
+const LOOKUP_LINKS = (ioc) => ({
+  PDNS: `insertlink.com`,
+  Shodan: `insertlink.com`,
+  Censys: `insertlink.com`,
+  Spur: `insertlink.com`,
+  IP2Proxy: `insertlink.com`,
+  BGP: `insertlink.com`,
+  OIL: `insertlink.com`,
+});
 
 function Results({ results }) {
   if (!results || !results.data) return <p>No results found.</p>;
 
-  const { data, queryLogs } = results;
+  const { data } = results;
 
   return (
-    <div className="results-container">
-      {Object.entries(data).map(([ioc, oils]) => (
-        <div key={ioc} className="ioc-card">
-          <h2 className="ioc-header">IOC: {ioc}</h2>
+    <div className="results-table-wrapper">
+      <table className="results-table">
+        <thead>
+          <tr>
+            <th>IOC</th>
+            <th>Look Ups</th>
+            <th>Asset</th>
+            <th>Security Log</th>
+            <th>Hash</th>
+            <th>Netflow</th>
+            <th>Query Log</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(data).map(([ioc, entry]) => {
+            const lookups = LOOKUP_LINKS(ioc);
+            const assets = entry.asset?.data || [];
+            const securityLogs = entry.coxsight?.data || [];
+            const netflows = entry.netflow?.data || [];
+            const logs = entry.query_log || [];
 
-          {/* Query Logs */}
-          <div className="query-logs">
-            <h3>Query Logs</h3>
-            <ul>
-              {queryLogs[ioc]?.length > 0 ? (
-                queryLogs[ioc].map((log) => (
-                  <li key={log.log_id}>
-                    <span className="timestamp">[{log.last_lookup}]</span> —{" "}
-                    <strong>{log.user_name}</strong> queried {log.result_count} result(s)
-                  </li>
-                ))
-              ) : (
-                <li>No logs found</li>
-              )}
-            </ul>
-          </div>
+            return (
+              <tr key={ioc}>
+                <td>
+                  <a href={`#`} style={{ color: "#fa8b8b", textDecoration: "underline" }}>{ioc}</a>
+                </td>
+                <td>
+                <a href={lookups.PDNS}>PDNS</a><br />
+                <a href={lookups.Shodan}>Shodan</a> | <a href={lookups.Censys}>Censys</a><br />
+                <a href={lookups.Spur}>Spur</a> | <a href={lookups.IP2Proxy}>IP2Proxy</a> | <a href={lookups.BGP}>BGP View</a>
+                </td>
 
-          {/* IOC -> OIL -> Source */}
-          {Object.entries(oils).map(([oil, sources]) => (
-            <div key={oil} className="oil-block">
-              <h3 className="oil-header">🛢️ OIL: <strong>{oil}</strong></h3>
-              
-              {Object.entries(sources).map(([source, entries]) => (
-                <div key={source} className="source-table">
-                  <h4 className="source-label">🔹 Source: {source}</h4>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Timestamp</th>
-                        <th>User</th>
-                        <th>Display</th>
-                        <th>Client IP</th>
-                        <th>ASN Org</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {entries.map((entry, idx) => (
-                        <tr key={idx}>
-                          <td>{entry.timestamp}</td>
-                          <td>{entry.userPrincipalName || "-"}</td>
-                          <td>{entry.displayName}</td>
-                          <td>{entry.client?.ip || "-"}</td>
-                          <td>{entry.client?.as_org || "-"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      ))}
+                <td>
+                  {assets.length > 0 ? (
+                    assets.map((a, i) => (
+                      <div key={i}>
+                        Host: {a.host?.name}<br />
+                        IP: {a.host?.ip}<br />
+                        Owner: {a.platform?.owner?.full_name}
+                      </div>
+                    ))
+                  ) : (
+                    <em>None</em>
+                  )}
+                </td>
+
+                <td>
+                  {securityLogs.length > 0 ? (
+                    securityLogs.map((log, i) => (
+                      <div key={i}>
+                        User: {log.user?.full_name || log.user?.email}<br />
+                        Host: {log.host?.name}<br />
+                        Time: {log.timestamp}{"   "}
+                        <a
+                          href={lookups.OIL}>🛢️OIL
+                        </a>
+                      </div>
+                    ))
+                  ) : (
+                    <em>None</em>
+                  )}
+                </td>
+
+                <td>N/A</td>
+
+                <td>
+                  {netflows.length > 0 ? (
+                    netflows.map((flow, i) => (
+                      <div key={i}>
+                        Src: {flow.source?.ip}:{flow.source?.port}<br />
+                        Dst: {flow.destination?.ip}:{flow.destination?.port}<br />
+                        Proto: {flow.network?.transport}
+                      </div>
+                    ))
+                  ) : (
+                    <em>None</em>
+                  )}
+                </td>
+
+                <td>
+                  {logs.length > 0 ? (
+                    logs.map((log, i) => (
+                      <div key={i}>
+                        <span style={{ fontSize: "0.85rem", color: "#aaa" }}>•</span>{" "}
+                        <strong>{log.user_name}</strong> queried <code>{log.result_count}</code>
+                      </div>
+                    ))
+                  ) : (
+                    <em>None</em>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

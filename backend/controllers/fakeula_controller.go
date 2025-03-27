@@ -16,8 +16,8 @@ import (
 func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 	// CORS for React
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
 
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
@@ -75,8 +75,11 @@ func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 		rawResults[ioc] = rawData
 	}
 
-	// Run all raw IOC results through your parser
-	//parsed := parser.FormatFakeulaResponse(rawResults)
+	/* Run all raw IOC results through your parser
+
+	parsed := parser.FormatFakeulaResponse(rawResults)
+
+	Unsure if parser is neccesary for this step, might keep it working for querying different sources instead of for the initial table*/
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
