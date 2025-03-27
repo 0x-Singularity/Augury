@@ -6,11 +6,10 @@ import (
 )
 
 // MultiLevelMap is the data structure to store parsed FAKEula data.
-// - First level key: IOC
-// - Second level key: OIL
-// - Third level key: Source
+// - First level key: OIL
+// - Second level key: Source
 // - Value: Slice of FakeulaEntry structs containing the actual data
-type MultiLevelMap map[string]map[string]map[string][]FakeulaEntry
+type MultiLevelMap map[string]map[string][]FakeulaEntry
 
 // ResultsCache defines a map type that stores parsed FAKEula responses for reuse
 // Key is the stringified JSON data, Value is the parsed MultiLevelMap
@@ -108,8 +107,7 @@ type PDNSInfo struct {
 
 // result structure
 type ParsedFakeulaResult struct {
-	Data      MultiLevelMap              `json:"data"`
-	QueryLogs map[string][]QueryLogEntry `json:"queryLogs"`
+	Data MultiLevelMap `json:"data"`
 }
 
 // query log structure
@@ -129,7 +127,6 @@ var resultsCache = make(ResultsCache)
 // FormatFakeulaResponse parses and organizes the FAKEula response
 func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult {
 	var parsedData = make(MultiLevelMap)
-	queryLogs := make(map[string][]QueryLogEntry)
 
 	// Check if "data" field exists in response
 	if data, exists := response["data"].([]interface{}); exists {
@@ -155,44 +152,23 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 				}
 
 				// Extract keys for organizing the data in the MultiLevelMap
-				ioc := getString(entryMap, "key") //get ioc from the key since that is the queried IOC
 				oil := parsedEntry.Oil
 				source := getSource(entryMap)
 
 				// Initialize nested maps if they don't exist
 				// Level 1
-				if _, exists := parsedData[ioc]; !exists {
-					parsedData[ioc] = make(map[string]map[string][]FakeulaEntry)
+				// Level 1
+				if _, exists := parsedData[oil]; !exists {
+					parsedData[oil] = make(map[string][]FakeulaEntry)
 				}
 				// Level 2
-				if _, exists := parsedData[ioc][oil]; !exists {
-					parsedData[ioc][oil] = make(map[string][]FakeulaEntry)
-				}
-				// Level 3
-				if _, exists := parsedData[ioc][oil][source]; !exists {
-					parsedData[ioc][oil][source] = []FakeulaEntry{}
+				if _, exists := parsedData[oil][source]; !exists {
+					parsedData[oil][source] = []FakeulaEntry{}
 				}
 
 				// Append the parsed entry to the appropriate slice in the MultiLevelMap
-				parsedData[ioc][oil][source] = append(parsedData[ioc][oil][source], parsedEntry)
+				parsedData[oil][source] = append(parsedData[oil][source], parsedEntry)
 
-			}
-		}
-	}
-
-	// Parse "query_log"
-	if qlogData, exists := response["query_log"].([]interface{}); exists {
-		for _, entry := range qlogData {
-			if entryMap, ok := entry.(map[string]interface{}); ok {
-				ioc := getString(entryMap, "ioc")
-				qlog := QueryLogEntry{
-					LogID:       getInt(entryMap, "log_id"),
-					IOC:         ioc,
-					LastLookup:  getString(entryMap, "last_lookup"),
-					ResultCount: getInt(entryMap, "result_count"),
-					UserName:    getString(entryMap, "user_name"),
-				}
-				queryLogs[ioc] = append(queryLogs[ioc], qlog)
 			}
 		}
 	}
@@ -208,8 +184,8 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 	//PrintResultsCache()
 
 	return ParsedFakeulaResult{
-		Data:      parsedData,
-		QueryLogs: queryLogs,
+		Data: parsedData,
+		//QueryLogs: queryLogs,
 	}
 }
 
