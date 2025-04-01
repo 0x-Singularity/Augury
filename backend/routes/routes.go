@@ -14,4 +14,6 @@ func SetupRoutes(router *mux.Router) {
 
 	apiRouter.HandleFunc("/ioc/extract", controllers.ExtractFromText).Methods("POST", "OPTIONS")
 
+	apiRouter.HandleFunc("/ioc/oil", controllers.QueryAllOIL).Methods("GET")
+
 }
