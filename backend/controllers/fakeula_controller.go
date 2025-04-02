@@ -10,14 +10,15 @@ import (
 	"os"
 
 	"github.com/0x-Singularity/Augury/models"
+	"github.com/0x-Singularity/Augury/parser"
 )
 
 // ExtractFromText receives a block of text, extracts IOCs, and queries FAKEula for each one
 func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 	// CORS for React
 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
 
 	if r.Method == "OPTIONS" {
 		w.WriteHeader(http.StatusOK)
@@ -74,9 +75,6 @@ func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 		}
 		rawResults[ioc] = rawData
 	}
-
-	// Run all raw IOC results through your parser
-	//parsed := parser.FormatFakeulaResponse(rawResults)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
@@ -220,4 +218,56 @@ func fetchPDNSResultCount(ioc string) int {
 
 	log.Printf("No data found in PDNS summary for %s", ioc)
 	return 1
+}
+
+// function to query all OIL sources
+func QueryAllOIL(w http.ResponseWriter, r *http.Request) {
+	// CORS for React
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
+
+	if r.Method == "OPTIONS" {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%soil/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build OIL query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query OIL", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var oilData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&oilData); err != nil {
+		http.Error(w, "Error decoding OIL data", http.StatusInternalServerError)
+		return
+	}
+
+	//Run oilData through the parser
+
+	parsed := parser.FormatFakeulaResponse(oilData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(parsed)
 }
