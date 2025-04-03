@@ -6,11 +6,11 @@ import (
 )
 
 // MultiLevelMap is the data structure to store parsed FAKEula data.
-// - First level key: IOC
-// - Second level key: OIL
-// - Third level key: Source
+
+// - First level key: source
+// - Second level key: structure type
 // - Value: Slice of FakeulaEntry structs containing the actual data
-type MultiLevelMap map[string]map[string]map[string][]FakeulaEntry
+type MultiLevelMap map[string]map[string][]FakeulaEntry
 
 // ResultsCache defines a map type that stores parsed FAKEula responses for reuse
 // Key is the stringified JSON data, Value is the parsed MultiLevelMap
@@ -22,19 +22,25 @@ type ResultsCache map[string]MultiLevelMap
 // This is the main struct that contains all the different types of data that can be returned from a FAKEula query
 // Most fields are pointers so they can be nil if not present.
 type FakeulaEntry struct {
-	CallerIpAddress   string      `json:"callerIpAddress"`
-	CoxAccountName    string      `json:"coxAccountName"`
-	DisplayName       string      `json:"displayName"`
-	Oil               string      `json:"oil"`
-	Timestamp         string      `json:"timestamp"`
-	UserDisplayName   string      `json:"userDisplayName"`
-	UserPrincipalName string      `json:"userPrincipalName"`
-	Client            *ClientInfo `json:"client,omitempty"`
-	Binary            *BinaryInfo `json:"binary,omitempty"`
-	Asset             *AssetInfo  `json:"asset,omitempty"`
-	Geo               *GeoInfo    `json:"geo,omitempty"`
-	LDAP              *LdapInfo   `json:"ldap,omitempty"`
-	PDNS              *PDNSInfo   `json:"pdns,omitempty"`
+	Oil    *OilInfo    `json:"oil"`
+	Client *ClientInfo `json:"client,omitempty"`
+	Binary *BinaryInfo `json:"binary,omitempty"`
+	Asset  *AssetInfo  `json:"asset,omitempty"`
+	Geo    *GeoInfo    `json:"geo,omitempty"`
+	LDAP   *LdapInfo   `json:"ldap,omitempty"`
+	PDNS   *PDNSInfo   `json:"pdns,omitempty"`
+}
+
+// OilInfo
+type OilInfo struct {
+	Timestamp     string `json:"timestamp"`
+	UserPrincipal string `json:"userPrincipalName"`
+	DisplayName   string `json:"displayName"`
+	ClientIP      string `json:"clientIp"`
+	ClientASNOrg  string `json:"clientAsOrg"`
+	EventType     string `json:"eventType"`
+	Outcome       string `json:"outcome"`
+	Message       string `json:"message"`
 }
 
 // ClientInfo represents network client information
@@ -108,17 +114,7 @@ type PDNSInfo struct {
 
 // result structure
 type ParsedFakeulaResult struct {
-	Data      MultiLevelMap              `json:"data"`
-	QueryLogs map[string][]QueryLogEntry `json:"queryLogs"`
-}
-
-// query log structure
-type QueryLogEntry struct {
-	LogID       int    `json:"log_id"`
-	IOC         string `json:"ioc"`
-	LastLookup  string `json:"last_lookup"`
-	ResultCount int    `json:"result_count"`
-	UserName    string `json:"user_name"`
+	Data MultiLevelMap `json:"data"`
 }
 
 //--------------------Functions to parse and format the FAKEula response---------------------------------------------------------------------
@@ -127,9 +123,9 @@ type QueryLogEntry struct {
 var resultsCache = make(ResultsCache)
 
 // FormatFakeulaResponse parses and organizes the FAKEula response
+
 func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult {
 	var parsedData = make(MultiLevelMap)
-	queryLogs := make(map[string][]QueryLogEntry)
 
 	// Check if "data" field exists in response
 	if data, exists := response["data"].([]interface{}); exists {
@@ -139,19 +135,13 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 			if entryMap, ok := entry.(map[string]interface{}); ok {
 				// Create a FakeulaEntry struct and populate it with data from the entry map
 				parsedEntry := FakeulaEntry{
-					CallerIpAddress:   getString(entryMap, "callerIpAddress"),
-					CoxAccountName:    getString(entryMap, "coxAccountName"),
-					DisplayName:       getString(entryMap, "displayName"),
-					Oil:               getString(entryMap, "oil"),
-					Timestamp:         getString(entryMap, "timestamp"),
-					UserDisplayName:   getString(entryMap, "userDisplayName"),
-					UserPrincipalName: getString(entryMap, "userPrincipalName"),
-					Client:            parseClient(entryMap),
-					Binary:            parseBinary(entryMap),
-					Asset:             parseAsset(entryMap),
-					Geo:               parseGeo(entryMap),
-					LDAP:              parseLdap(entryMap),
-					PDNS:              parsePDNS(entryMap),
+					Oil:    parseOil(entryMap),
+					Client: parseClient(entryMap),
+					Binary: parseBinary(entryMap),
+					Asset:  parseAsset(entryMap),
+					Geo:    parseGeo(entryMap),
+					LDAP:   parseLdap(entryMap),
+					PDNS:   parsePDNS(entryMap),
 				}
 
 				// Extract keys for organizing the data in the MultiLevelMap
@@ -180,40 +170,36 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 		}
 	}
 
-	// Parse "query_log"
-	if qlogData, exists := response["query_log"].([]interface{}); exists {
-		for _, entry := range qlogData {
-			if entryMap, ok := entry.(map[string]interface{}); ok {
-				ioc := getString(entryMap, "ioc")
-				qlog := QueryLogEntry{
-					LogID:       getInt(entryMap, "log_id"),
-					IOC:         ioc,
-					LastLookup:  getString(entryMap, "last_lookup"),
-					ResultCount: getInt(entryMap, "result_count"),
-					UserName:    getString(entryMap, "user_name"),
-				}
-				queryLogs[ioc] = append(queryLogs[ioc], qlog)
-			}
-		}
-	}
-
 	// Store the parsed data in the cache using the original data as the key
 	cacheKey, err := json.Marshal(response["data"])
 	if err == nil {
 		resultsCache[string(cacheKey)] = parsedData
 	}
-
 	// Print cache for debugging
 	//fmt.Println("=== Cached response added ===")
 	//PrintResultsCache()
 
 	return ParsedFakeulaResult{
-		Data:      parsedData,
-		QueryLogs: queryLogs,
+		Data: parsedData,
 	}
+
 }
 
 // ------------------------------------------------Helper functions to parse nested data for each endpoint in FAKEula----------------------------------------------
+func parseOil(entryMap map[string]interface{}) *OilInfo {
+	oil := &OilInfo{
+		Timestamp:     getString(entryMap, "timestamp"),
+		UserPrincipal: getString(entryMap, "userPrincipalName"),
+		DisplayName:   getString(entryMap, "displayName"),
+		ClientIP:      "",
+		ClientASNOrg:  "",
+		EventType:     "",
+		Outcome:       "",
+		Message:       "",
+	}
+
+}
+
 func parseClient(entryMap map[string]interface{}) *ClientInfo {
 	// Check if the "client" field exists and is a map
 	if client, ok := entryMap["client"].(map[string]interface{}); ok {
@@ -415,15 +401,33 @@ func parsePDNS(entryMap map[string]interface{}) *PDNSInfo {
 
 // getSource determines the data source type for an entry by checking which specific data fields are present in the entry map
 func getSource(entryMap map[string]interface{}) string {
-	// Check each known source type key
+	// 1. Check direct known keys
 	for key := range entryMap {
 		switch key {
 		case "client", "binary", "asset", "geo", "ldap", "pdns":
-			// Return the first matching source type key found
 			return key
 		}
 	}
-	// Return "unknown" if no recognized source type is found
+
+	// 2. Check megaoil pipeline tag
+	if megaoil, ok := entryMap["megaoil"].(map[string]interface{}); ok {
+		if pipeline, ok := megaoil["pipeline"].(string); ok {
+			return pipeline
+		}
+	}
+
+	// 3. Check for fallback event.module
+	if event, ok := entryMap["event"].(map[string]interface{}); ok {
+		if mod, ok := event["module"].(string); ok {
+			return mod
+		}
+	}
+
+	// 4. Last resort: use "oil" field
+	if oil, ok := entryMap["oil"].(string); ok && oil != "" {
+		return oil
+	}
+
 	return "unknown"
 }
 
