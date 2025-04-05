@@ -145,27 +145,27 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 				}
 
 				// Extract keys for organizing the data in the MultiLevelMap
-				ioc := getString(entryMap, "key") //get ioc from the key since that is the queried IOC
-				oil := parsedEntry.Oil
+				//ioc := getString(entryMap, "key") //get ioc from the key since that is the queried IOC
+				//oil := parsedEntry.Oil
 				source := getSource(entryMap)
 
-				// Initialize nested maps if they don't exist
-				// Level 1
-				if _, exists := parsedData[ioc]; !exists {
-					parsedData[ioc] = make(map[string]map[string][]FakeulaEntry)
-				}
-				// Level 2
-				if _, exists := parsedData[ioc][oil]; !exists {
-					parsedData[ioc][oil] = make(map[string][]FakeulaEntry)
-				}
-				// Level 3
-				if _, exists := parsedData[ioc][oil][source]; !exists {
-					parsedData[ioc][oil][source] = []FakeulaEntry{}
-				}
+				structureTypes := getStructureTypes(&parsedEntry)
 
-				// Append the parsed entry to the appropriate slice in the MultiLevelMap
-				parsedData[ioc][oil][source] = append(parsedData[ioc][oil][source], parsedEntry)
+				for _, structType := range structureTypes {
 
+					// Initialize nested maps if they don't exist
+					// Level 1 - source
+					if _, exists := parsedData[source]; !exists {
+						parsedData[source] = make(map[string][]FakeulaEntry)
+					}
+					// Level 2 - structure type
+					if _, exists := parsedData[source][structType]; !exists {
+						parsedData[source][structType] = []FakeulaEntry{}
+					}
+
+					// Append the parsed entry to the appropriate slice in the MultiLevelMap
+					parsedData[source][source] = append(parsedData[source][structType], parsedEntry)
+				}
 			}
 		}
 	}
@@ -185,19 +185,54 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 
 }
 
+// Function to return a slice of structure types present in a FAKEula entry, this function determines the second level of the multi level map
+func getStructureTypes(entry *FakeulaEntry) []string {
+	structTypes := []string{}
+
+	if entry.Oil != nil {
+		structTypes = append(structTypes, "oil")
+	}
+	if entry.Client != nil {
+		structTypes = append(structTypes, "client")
+	}
+	if entry.Binary != nil {
+		structTypes = append(structTypes, "binary")
+	}
+	if entry.Asset != nil {
+		structTypes = append(structTypes, "asset")
+	}
+	if entry.Geo != nil {
+		structTypes = append(structTypes, "geo")
+	}
+	if entry.LDAP != nil {
+		structTypes = append(structTypes, "ldap")
+	}
+	if entry.PDNS != nil {
+		structTypes = append(structTypes, "pdns")
+	}
+
+	// If no structure types were found, add "unknown" as a fallback
+	if len(structTypes) == 0 {
+		structTypes = append(structTypes, "unknown")
+	}
+
+	return structTypes
+}
+
 // ------------------------------------------------Helper functions to parse nested data for each endpoint in FAKEula----------------------------------------------
 func parseOil(entryMap map[string]interface{}) *OilInfo {
 	oil := &OilInfo{
 		Timestamp:     getString(entryMap, "timestamp"),
 		UserPrincipal: getString(entryMap, "userPrincipalName"),
 		DisplayName:   getString(entryMap, "displayName"),
-		ClientIP:      "",
-		ClientASNOrg:  "",
-		EventType:     "",
-		Outcome:       "",
-		Message:       "",
+		ClientIP:      getString(entryMap, "clientIp"),
+		ClientASNOrg:  getString(entryMap, "clientAsOrg"),
+		EventType:     getString(entryMap, "eventType"),
+		Outcome:       getString(entryMap, "outcome"),
+		Message:       getString(entryMap, "message"),
 	}
 
+	return oil
 }
 
 func parseClient(entryMap map[string]interface{}) *ClientInfo {
