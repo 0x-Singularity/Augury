@@ -70,7 +70,11 @@ function Results({ results }) {
                         Host: {log.host?.name}<br />
                         Time: {log.timestamp}{"   "}
                         <a
-                          href={lookups.OIL}>🛢️OIL
+                          href={`/oil?ioc=${encodeURIComponent(ioc)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View OIL
                         </a>
                       </div>
                     ))
