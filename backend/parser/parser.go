@@ -164,7 +164,7 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 					}
 
 					// Append the parsed entry to the appropriate slice in the MultiLevelMap
-					parsedData[source][source] = append(parsedData[source][structType], parsedEntry)
+					parsedData[source][structType] = append(parsedData[source][structType], parsedEntry)
 				}
 			}
 		}
