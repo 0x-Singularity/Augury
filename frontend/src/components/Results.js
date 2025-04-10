@@ -1,17 +1,17 @@
 import React from "react";
 
 const LOOKUP_LINKS = (ioc) => ({
-  PDNS: `http://localhost:8080/api/ioc/pdns?ioc=${encodeURIComponent(ioc)}`,
-  LDAP: `http://localhost:8080/api/ioc/ldap?ioc=${encodeURIComponent(ioc)}`,
-  GeoIP: `http://localhost:8080/api/ioc/geo?ioc=${encodeURIComponent(ioc)}`,
-  Binary: `http://localhost:8080/api/ioc/binary?ioc=${encodeURIComponent(ioc)}`,
-  VPN: `http://localhost:8080/api/ioc/vpn?ioc=${encodeURIComponent(ioc)}`,
+  PDNS: `/view?source=pdns&ioc=${encodeURIComponent(ioc)}`,
+  LDAP: `/view?source=ldap&ioc=${encodeURIComponent(ioc)}`,
+  GeoIP: `/view?source=geo&ioc=${encodeURIComponent(ioc)}`,
+  Binary: `/view?source=binary&ioc=${encodeURIComponent(ioc)}`,
+  VPN: `/view?source=vpn&ioc=${encodeURIComponent(ioc)}`,
   Shodan: `https://www.shodan.io/search?query=${encodeURIComponent(ioc)}`,
   Censys: `https://search.censys.io/search?resource=hosts&q=${encodeURIComponent(ioc)}`,
   Spur: `https://spur.us/search?q=${encodeURIComponent(ioc)}`,
   IP2Proxy: `https://www.ip2proxy.com/demo/${encodeURIComponent(ioc)}`,
   BGP: `https://bgpview.io/ip/${encodeURIComponent(ioc)}`,
-  OIL: `/oil?ioc=${encodeURIComponent(ioc)}`,
+  OIL: `/view?source=oil&ioc=${encodeURIComponent(ioc)}`,
 });
 
 function Results({ results }) {

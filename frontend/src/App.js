@@ -1,8 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
-import OilView from "./components/OilView"; // Make sure this is defined
-
+import IOCView from "./components/IOCView";
 function App() {
   return (
     <Router>
@@ -12,7 +11,7 @@ function App() {
 
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/oil" element={<OilView />} />
+          <Route path="/view" element={<IOCView/>} /> {/* Universal View */}
         </Routes>
       </div>
     </Router>

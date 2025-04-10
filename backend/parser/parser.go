@@ -165,6 +165,7 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 
 					// Append the parsed entry to the appropriate slice in the MultiLevelMap
 					parsedData[source][structType] = append(parsedData[source][structType], parsedEntry)
+
 				}
 			}
 		}
@@ -225,11 +226,28 @@ func parseOil(entryMap map[string]interface{}) *OilInfo {
 		Timestamp:     getString(entryMap, "timestamp"),
 		UserPrincipal: getString(entryMap, "userPrincipalName"),
 		DisplayName:   getString(entryMap, "displayName"),
-		ClientIP:      getString(entryMap, "clientIp"),
-		ClientASNOrg:  getString(entryMap, "clientAsOrg"),
-		EventType:     getString(entryMap, "eventType"),
-		Outcome:       getString(entryMap, "outcome"),
-		Message:       getString(entryMap, "message"),
+		ClientIP:      getString(entryMap, "callerIpAddress"),
+		ClientASNOrg:  "", // fallback set below
+		EventType:     "",
+		Outcome:       "",
+		Message:       "",
+	}
+
+	// Get Client ASN Org if available
+	if client, ok := entryMap["client"].(map[string]interface{}); ok {
+		oil.ClientASNOrg = getString(client, "as_org")
+	}
+
+	// Try Azure/Okta-style event block
+	if event, ok := entryMap["event"].(map[string]interface{}); ok {
+		oil.EventType = getString(event, "type")
+		oil.Outcome = getString(event, "outcome")
+		oil.Message = getString(event, "message") // fallback for alerts
+	}
+
+	// Special handling for Okta logout message
+	if msg := getString(entryMap, "displayMessage"); msg != "" {
+		oil.Message = msg
 	}
 
 	return oil
