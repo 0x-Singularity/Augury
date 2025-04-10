@@ -1,13 +1,17 @@
 import React from "react";
 
 const LOOKUP_LINKS = (ioc) => ({
-  PDNS: `insertlink.com`,
-  Shodan: `insertlink.com`,
-  Censys: `insertlink.com`,
-  Spur: `insertlink.com`,
-  IP2Proxy: `insertlink.com`,
-  BGP: `insertlink.com`,
-  OIL: `insertlink.com`,
+  PDNS: `http://localhost:8080/api/ioc/pdns?ioc=${encodeURIComponent(ioc)}`,
+  LDAP: `http://localhost:8080/api/ioc/ldap?ioc=${encodeURIComponent(ioc)}`,
+  GeoIP: `http://localhost:8080/api/ioc/geo?ioc=${encodeURIComponent(ioc)}`,
+  Binary: `http://localhost:8080/api/ioc/binary?ioc=${encodeURIComponent(ioc)}`,
+  VPN: `http://localhost:8080/api/ioc/vpn?ioc=${encodeURIComponent(ioc)}`,
+  Shodan: `https://www.shodan.io/search?query=${encodeURIComponent(ioc)}`,
+  Censys: `https://search.censys.io/search?resource=hosts&q=${encodeURIComponent(ioc)}`,
+  Spur: `https://spur.us/search?q=${encodeURIComponent(ioc)}`,
+  IP2Proxy: `https://www.ip2proxy.com/demo/${encodeURIComponent(ioc)}`,
+  BGP: `https://bgpview.io/ip/${encodeURIComponent(ioc)}`,
+  OIL: `/oil?ioc=${encodeURIComponent(ioc)}`,
 });
 
 function Results({ results }) {
@@ -43,11 +47,17 @@ function Results({ results }) {
                   <a href={`#`} style={{ color: "#fa8b8b", textDecoration: "underline" }}>{ioc}</a>
                 </td>
                 <td>
-                <a href={lookups.PDNS}>PDNS</a><br />
-                <a href={lookups.Shodan}>Shodan</a> | <a href={lookups.Censys}>Censys</a><br />
-                <a href={lookups.Spur}>Spur</a> | <a href={lookups.IP2Proxy}>IP2Proxy</a> | <a href={lookups.BGP}>BGP View</a>
+                  <a href={lookups.PDNS} target="_blank" rel="noopener noreferrer">PDNS</a><br />
+                  <a href={lookups.LDAP} target="_blank" rel="noopener noreferrer">LDAP</a><br />
+                  <a href={lookups.GeoIP} target="_blank" rel="noopener noreferrer">GeoIP</a><br />
+                  <a href={lookups.Binary} target="_blank" rel="noopener noreferrer">Binary</a><br />
+                  <a href={lookups.VPN} target="_blank" rel="noopener noreferrer">VPN</a><br />
+                  <a href={lookups.Shodan} target="_blank" rel="noopener noreferrer">Shodan</a> | 
+                  <a href={lookups.Censys} target="_blank" rel="noopener noreferrer">Censys</a><br />
+                  <a href={lookups.Spur} target="_blank" rel="noopener noreferrer">Spur</a> | 
+                  <a href={lookups.IP2Proxy} target="_blank" rel="noopener noreferrer">IP2Proxy</a> | 
+                  <a href={lookups.BGP} target="_blank" rel="noopener noreferrer">BGP View</a>
                 </td>
-
                 <td>
                   {assets.length > 0 ? (
                     assets.map((a, i) => (
@@ -70,7 +80,7 @@ function Results({ results }) {
                         Host: {log.host?.name}<br />
                         Time: {log.timestamp}{"   "}
                         <a
-                          href={`/oil?ioc=${encodeURIComponent(ioc)}`}
+                          href={LOOKUP_LINKS(ioc).OIL}
                           target="_blank"
                           rel="noopener noreferrer"
                         >

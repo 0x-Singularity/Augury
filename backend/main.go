@@ -12,6 +12,24 @@ import (
 	"github.com/joho/godotenv"
 )
 
+// CORSMiddleware adds CORS headers to the response
+func CORSMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
+
+		// Handle preflight OPTIONS request
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		// Call the next handler
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 
 	// Load environment variables from .env
@@ -27,6 +45,9 @@ func main() {
 	}
 
 	router := mux.NewRouter()
+
+	// Apply CORS middleware to all routes
+	router.Use(CORSMiddleware)
 
 	staticFileDirectory := http.Dir("../frontend/static")
 	staticFileHandler := http.StripPrefix("/static/", http.FileServer(staticFileDirectory))

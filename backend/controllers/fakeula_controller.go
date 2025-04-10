@@ -15,16 +15,6 @@ import (
 
 // ExtractFromText receives a block of text, extracts IOCs, and queries FAKEula for each one
 func ExtractFromText(w http.ResponseWriter, r *http.Request) {
-	// CORS for React
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Could not read input", http.StatusBadRequest)
@@ -222,16 +212,6 @@ func fetchPDNSResultCount(ioc string) int {
 
 // function to query all OIL sources
 func QueryAllOIL(w http.ResponseWriter, r *http.Request) {
-	// CORS for React
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-User-Name")
-
-	if r.Method == "OPTIONS" {
-		w.WriteHeader(http.StatusOK)
-		return
-	}
-
 	ioc := r.URL.Query().Get("ioc")
 	if ioc == "" {
 		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
@@ -270,4 +250,207 @@ func QueryAllOIL(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(parsed)
+}
+
+// QueryPDNS queries the Passive DNS (PDNS) endpoint for a given IOC
+func QueryPDNS(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%spdns/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build PDNS query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query PDNS", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var pdnsData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&pdnsData); err != nil {
+		http.Error(w, "Error decoding PDNS data", http.StatusInternalServerError)
+		return
+	}
+
+	// Run PDNS data through the parser
+	parsed := parser.FormatFakeulaResponse(pdnsData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(parsed)
+}
+
+// QueryLDAP queries the LDAP endpoint for a given IOC
+func QueryLDAP(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%sldap/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build LDAP query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query LDAP", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var ldapData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&ldapData); err != nil {
+		http.Error(w, "Error decoding LDAP data", http.StatusInternalServerError)
+		return
+	}
+
+	// Run LDAP data through the parser
+	parsed := parser.FormatFakeulaResponse(ldapData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(parsed)
+}
+
+// QueryGeoIP queries the GeoIP endpoint for a given IOC
+func QueryGeoIP(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%sgeo/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build GeoIP query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query GeoIP", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var geoData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&geoData); err != nil {
+		http.Error(w, "Error decoding GeoIP data", http.StatusInternalServerError)
+		return
+	}
+
+	// Run GeoIP data through the parser
+	parsed := parser.FormatFakeulaResponse(geoData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(parsed)
+}
+
+// QueryBinary queries the Binary endpoint for a given IOC
+func QueryBinary(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%sbinary/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build Binary query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query Binary", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var binaryData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&binaryData); err != nil {
+		http.Error(w, "Error decoding Binary data", http.StatusInternalServerError)
+		return
+	}
+
+	// Run Binary data through the parser
+	parsed := parser.FormatFakeulaResponse(binaryData)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(parsed)
+}
+
+// QueryVPN queries the VPN endpoint for a given IOC
+func QueryVPN(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%svpn/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build VPN query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query VPN", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var vpnData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&vpnData); err != nil {
+		http.Error(w, "Error decoding VPN data", http.StatusInternalServerError)
+		return
+	}
+
+	// No specific parser for VPN, return raw data
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(vpnData)
 }
