@@ -70,7 +70,11 @@ function Results({ results }) {
                         Host: {log.host?.name}<br />
                         Time: {log.timestamp}{"   "}
                         <a
-                          href={lookups.OIL}>🛢️OIL
+                          href={`/oil?ioc=${encodeURIComponent(ioc)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View OIL
                         </a>
                       </div>
                     ))
@@ -100,7 +104,7 @@ function Results({ results }) {
                     logs.map((log, i) => (
                       <div key={i}>
                         <span style={{ fontSize: "0.85rem", color: "#aaa" }}>•</span>{" "}
-                        <strong>{log.user_name}</strong> queried <code>{log.result_count}</code>
+                        <strong>{log.last_lookup}</strong>: <strong>{log.user_name}</strong> queried <code>{log.result_count}</code>
                       </div>
                     ))
                   ) : (

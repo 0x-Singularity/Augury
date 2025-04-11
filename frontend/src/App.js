@@ -20,7 +20,7 @@ function App() {
       <div className="content">
         <h1 style={{ marginBottom: "10px" }}>AUGURY</h1>
         <h2 style={{ marginBottom: "20px" }}>IOC Intelligence</h2>
-        <Home theme={theme} />
+        <Home />
       </div>
     </div>
   );
