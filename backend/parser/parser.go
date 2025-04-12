@@ -250,6 +250,11 @@ func parseOil(entryMap map[string]interface{}) *OilInfo {
 		oil.Message = msg
 	}
 
+	// Return nil if there's no relevant oil data
+	if oil.Timestamp == "" && oil.UserPrincipal == "" && oil.DisplayName == "" && oil.ClientIP == "" {
+		return nil
+	}
+
 	return oil
 }
 
@@ -267,104 +272,99 @@ func parseClient(entryMap map[string]interface{}) *ClientInfo {
 }
 
 func parseBinary(entryMap map[string]interface{}) *BinaryInfo {
-	if binaryData, ok := entryMap["binary"].(map[string]interface{}); ok {
+	// Try to extract file information
+	// Skip looking for "binary" keyword, binary responses are nested under "file"
+	if file, ok := entryMap["file"].(map[string]interface{}); ok {
 		binary := &BinaryInfo{}
 
-		// Try to extract file information
-		if file, ok := binaryData["file"].(map[string]interface{}); ok {
-			// Get filename
-			binary.Filename = getString(file, "name")
+		// Get filename
+		binary.Filename = getString(file, "name")
+		// Get accessed timestamp
+		binary.Accessed = getString(file, "accessed")
 
-			// Get accessed timestamp
-			binary.Accessed = getString(file, "accessed")
+		// Extract hash information
+		if hash, ok := file["hash"].(map[string]interface{}); ok {
+			binary.MD5 = getString(hash, "md5")
+			// SHA256 might also be in the hash object if available, couldn't tell if it was or not in the FAKEula readme
+			binary.SHA256 = getString(hash, "sha256")
+		}
 
-			// Extract hash information
-			if hash, ok := file["hash"].(map[string]interface{}); ok {
-				binary.MD5 = getString(hash, "md5")
-				// SHA256 might also be in the hash object if available, couldn't tell if it was or not in the FAKEula readme
-				binary.SHA256 = getString(hash, "sha256")
-			}
-
-			// Extract host information
-			if hosts, ok := file["hosts"].([]interface{}); ok {
-				// Initialize a slice to store host names
-				hostNames := make([]string, 0, len(hosts))
-				// Iterate through each host
-				for _, h := range hosts {
-					if host, ok := h.(map[string]interface{}); ok {
-						// Iterate through each host
-						hostName := getString(host, "name")
-						// Add it to the slice if it's not empty
-						if hostName != "" {
-							hostNames = append(hostNames, hostName)
-						}
+		// Extract host information
+		if hosts, ok := file["hosts"].([]interface{}); ok {
+			for _, h := range hosts {
+				if host, ok := h.(map[string]interface{}); ok {
+					if name := getString(host, "name"); name != "" {
+						binary.Hosts = append(binary.Hosts, name)
 					}
 				}
-				binary.Hosts = hostNames
 			}
+		}
 
-			// Extract code signature information
-			if signature, ok := file["code_signature"].(map[string]interface{}); ok {
-				if exists, ok := signature["exists"].(bool); ok {
-					binary.CodeSigned = exists
-				}
+		// Extract code signature information
+		if signature, ok := file["code_signature"].(map[string]interface{}); ok {
+			if exists, ok := signature["exists"].(bool); ok {
+				binary.CodeSigned = exists
 			}
 		}
 
 		// Extract URL from labels if available
-		if labels, ok := binaryData["labels"].(map[string]interface{}); ok {
+		if labels, ok := entryMap["labels"].(map[string]interface{}); ok {
 			binary.URL = getString(labels, "url")
 		}
 
-		return binary
+		// Check if it's truly populated
+		if binary.MD5 != "" || binary.Filename != "" {
+			return binary
+		}
 	}
 	return nil
 }
 
 func parseAsset(entryMap map[string]interface{}) *AssetInfo {
-	// First check if "asset" exists in the entry map
-	if assetData, ok := entryMap["asset"].(map[string]interface{}); ok {
-		asset := &AssetInfo{}
+	asset := &AssetInfo{}
 
-		// Try to extract host info
-		if host, ok := assetData["host"].(map[string]interface{}); ok {
-			asset.Name = getString(host, "name")
-			asset.IP = getString(host, "ip")
+	// Try to extract host info
+	if host, ok := entryMap["host"].(map[string]interface{}); ok {
+		asset.Name = getString(host, "name")
+		asset.IP = getString(host, "ip")
+	}
+
+	// Try to extract platform info
+	if platform, ok := entryMap["platform"].(map[string]interface{}); ok {
+		asset.PlatformName = getString(platform, "name")
+
+		// Extract platform owner
+		if owner, ok := platform["owner"].(map[string]interface{}); ok {
+			asset.PlatformOwner = getString(owner, "full_name")
 		}
 
-		// Try to extract platform info
-		if platform, ok := assetData["platform"].(map[string]interface{}); ok {
-			asset.PlatformName = getString(platform, "name")
-
-			// Extract platform owner
-			if owner, ok := platform["owner"].(map[string]interface{}); ok {
-				asset.PlatformOwner = getString(owner, "full_name")
-			}
-
-			// Extract executive info
-			if executive, ok := platform["executive"].(map[string]interface{}); ok {
-				asset.Executive = getString(executive, "full_name")
-			}
+		// Extract executive info
+		if executive, ok := platform["executive"].(map[string]interface{}); ok {
+			asset.Executive = getString(executive, "full_name")
 		}
+	}
 
-		// Try to extract stack info
-		if stack, ok := assetData["stack"].(map[string]interface{}); ok {
-			asset.StackName = getString(stack, "name")
+	// Try to extract stack info
+	if stack, ok := entryMap["stack"].(map[string]interface{}); ok {
+		asset.StackName = getString(stack, "name")
 
-			// Extract stack owner
-			if owner, ok := stack["owner"].(map[string]interface{}); ok {
-				asset.StackOwner = getString(owner, "full_name")
-			}
+		// Extract stack owner
+		if owner, ok := stack["owner"].(map[string]interface{}); ok {
+			asset.StackOwner = getString(owner, "full_name")
 		}
+	}
 
-		// Try to extract event timestamps
-		if event, ok := assetData["event"].(map[string]interface{}); ok {
-			asset.Created = getString(event, "created")
-			asset.Updated = getString(event, "updated")
-		}
+	// Try to extract event timestamps
+	if event, ok := entryMap["event"].(map[string]interface{}); ok {
+		asset.Created = getString(event, "created")
+		asset.Updated = getString(event, "updated")
+	}
 
+	// Return only if meaningful
+	if asset.Name != "" || asset.IP != "" || asset.PlatformName != "" {
 		return asset
 	}
+
 	return nil
 }
 
@@ -395,58 +395,63 @@ func parseGeo(entryMap map[string]interface{}) *GeoInfo {
 }
 
 func parseLdap(entryMap map[string]interface{}) *LdapInfo {
-	if ldap, ok := entryMap["ldap"].(map[string]interface{}); ok {
-		return &LdapInfo{
-			Email:       getString(ldap, "email"),
-			FullName:    getString(ldap, "fullName"),
-			Name:        getString(ldap, "name"),
-			Title:       getString(ldap, "title"),
-			CompanyName: getString(ldap, "companyName"),
-			Phone:       getString(ldap, "phone"),
-			Mobile:      getString(ldap, "mobile"),
-			Created:     getString(ldap, "created"),
-			Manager:     getString(ldap, "manager"),
-			Age:         getString(ldap, "age"),
+	if user, ok := entryMap["user"].(map[string]interface{}); ok {
+		ldap := &LdapInfo{
+			Email:       getString(user, "email"),
+			FullName:    getString(user, "full_name"),
+			Name:        getString(user, "name"),
+			Title:       getString(user, "title"),
+			CompanyName: getString(user, "company"),
+			Phone:       getString(user, "phone"),
+			Mobile:      getString(user, "mobile"),
+			Created:     getString(user, "created"),
+			Manager:     getString(user, "manager"),
+			Age:         fmt.Sprintf("%v", user["age"]),
+		}
+
+		// Basic check to avoid empty structs
+		if ldap.Email != "" || ldap.Name != "" {
+			return ldap
 		}
 	}
 	return nil
 }
 
 func parsePDNS(entryMap map[string]interface{}) *PDNSInfo {
-	if pdnsData, ok := entryMap["pdns"].(map[string]interface{}); ok {
+	// Try to extract DNS answers
+	if dns, ok := entryMap["dns"].(map[string]interface{}); ok {
 		pdns := &PDNSInfo{
 			Answers: []DNSAnswer{},
 		}
 
-		// Try to extract DNS answers
-		if dns, ok := pdnsData["dns"].(map[string]interface{}); ok {
-			// Iterate through each answer
-			if answers, ok := dns["answers"].([]interface{}); ok {
-				for _, a := range answers {
-					if answer, ok := a.(map[string]interface{}); ok {
-						// Create a new DNSAnswer struct and populate it
-						dnsAnswer := DNSAnswer{
-							Data:  getString(answer, "data"),
-							Name:  getString(answer, "name"),
-							Type:  getString(answer, "type"),
-							Count: getInt(answer, "count"),
-						}
-
-						// Extract event times
-						if event, ok := answer["event"].(map[string]interface{}); ok {
-							dnsAnswer.Start = getString(event, "start")
-							dnsAnswer.End = getString(event, "end")
-						}
-
-						// Add this answer to the slice
-						pdns.Answers = append(pdns.Answers, dnsAnswer)
+		// Iterate through each answer
+		if answers, ok := dns["answers"].([]interface{}); ok {
+			for _, a := range answers {
+				if answer, ok := a.(map[string]interface{}); ok {
+					// Create a new DNSAnswer struct and populate it
+					dnsAnswer := DNSAnswer{
+						Data:  getString(answer, "data"),
+						Name:  getString(answer, "name"),
+						Type:  getString(answer, "type"),
+						Count: getInt(answer, "count"),
 					}
+
+					// Extract event times
+					if event, ok := answer["event"].(map[string]interface{}); ok {
+						dnsAnswer.Start = getString(event, "start")
+						dnsAnswer.End = getString(event, "end")
+					}
+
+					// Add this answer to the slice
+					pdns.Answers = append(pdns.Answers, dnsAnswer)
 				}
 			}
 		}
-
-		return pdns
+		if len(pdns.Answers) > 0 {
+			return pdns
+		}
 	}
+
 	return nil
 }
 
@@ -454,33 +459,79 @@ func parsePDNS(entryMap map[string]interface{}) *PDNSInfo {
 
 // getSource determines the data source type for an entry by checking which specific data fields are present in the entry map
 func getSource(entryMap map[string]interface{}) string {
-	// 1. Check direct known keys
-	for key := range entryMap {
-		switch key {
-		case "client", "binary", "asset", "geo", "ldap", "pdns":
-			return key
+	// Attempt to determine the source based on the presence of known substructures.
+
+	// 1. Check client info
+	if _, ok := entryMap["client"].(map[string]interface{}); ok {
+		return "client"
+	}
+
+	// 2. Check binary info (direct or nested under "file")
+	if _, ok := entryMap["binary"].(map[string]interface{}); ok {
+		return "binary"
+	}
+	if _, ok := entryMap["file"].(map[string]interface{}); ok {
+		return "binary"
+	}
+
+	// 3. Check asset info
+	if _, ok := entryMap["asset"].(map[string]interface{}); ok {
+		return "asset"
+	}
+	if _, ok := entryMap["host"].(map[string]interface{}); ok {
+		if _, ok := entryMap["platform"].(map[string]interface{}); ok {
+			return "asset"
 		}
 	}
 
-	// 2. Check megaoil pipeline tag
+	// 4. Check geo info
+	if _, ok := entryMap["geo"].(map[string]interface{}); ok {
+		return "geo"
+	}
+	if _, ok := entryMap["as"].(map[string]interface{}); ok {
+		if _, ok := entryMap["geo"].(map[string]interface{}); ok {
+			return "geo"
+		}
+	}
+
+	// 5. Check LDAP info
+	if _, ok := entryMap["ldap"].(map[string]interface{}); ok {
+		return "ldap"
+	}
+	if _, ok := entryMap["user"].(map[string]interface{}); ok {
+		return "ldap"
+	}
+
+	// 6. Check PDNS info
+	if _, ok := entryMap["pdns"].(map[string]interface{}); ok {
+		return "pdns"
+	}
+	if dns, ok := entryMap["dns"].(map[string]interface{}); ok {
+		if _, ok := dns["answers"].([]interface{}); ok {
+			return "pdns"
+		}
+	}
+
+	// 7. Fallback to "oil" field if it exists and has a recognizable value
+	if oil, ok := entryMap["oil"].(string); ok && oil != "" {
+		return oil
+	}
+
+	// 8. Try megaoil pipeline
 	if megaoil, ok := entryMap["megaoil"].(map[string]interface{}); ok {
 		if pipeline, ok := megaoil["pipeline"].(string); ok {
 			return pipeline
 		}
 	}
 
-	// 3. Check for fallback event.module
+	// 9. Try event.module as a fallback
 	if event, ok := entryMap["event"].(map[string]interface{}); ok {
 		if mod, ok := event["module"].(string); ok {
 			return mod
 		}
 	}
 
-	// 4. Last resort: use "oil" field
-	if oil, ok := entryMap["oil"].(string); ok && oil != "" {
-		return oil
-	}
-
+	// Default fallback
 	return "unknown"
 }
 
