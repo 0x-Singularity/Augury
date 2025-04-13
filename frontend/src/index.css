@@ -190,31 +190,36 @@ h2 {
 
 .results-table th:nth-child(2),  /* Lookups */
 .results-table td:nth-child(2) {
-  width: 10%;
-}
-
-.results-table th:nth-child(3),  /* Asset */
-.results-table td:nth-child(3) {
   width: 15%;
 }
 
-.results-table th:nth-child(4),  /* Security Log */
-.results-table td:nth-child(4) {
-  width: 20%;
-}
-
-.results-table th:nth-child(5),  /* Hash */
-.results-table td:nth-child(5) {
+.results-table th:nth-child(3),  /* Binary */
+.results-table td:nth-child(3) {
   width: 5%;
 }
 
-.results-table th:nth-child(6),  /* Netflow */
-.results-table td:nth-child(6) {
+.results-table th:nth-child(4),  /* Asset */
+.results-table td:nth-child(4) {
+  width: 10%;
+}
+
+.results-table th:nth-child(5),  /* Security Log */
+.results-table td:nth-child(5) {
   width: 20%;
 }
 
-.results-table th:nth-child(7),  /* Query Log */
+.results-table th:nth-child(6),  /* Hash */
+.results-table td:nth-child(6) {
+  width: 5%;
+}
+
+.results-table th:nth-child(7),  /* Netflow */
 .results-table td:nth-child(7) {
+  width: 20%;
+}
+
+.results-table th:nth-child(8),  /* Query Log */
+.results-table td:nth-child(8) {
   width: 20%;
 }
 
