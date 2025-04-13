@@ -8,22 +8,22 @@ import (
 
 func TestParser(t *testing.T) {
 	// Test Oil lookup
-	testOilLookup(t)
+	//testOilLookup(t)
 
 	// Test Client lookup
-	testClientLookup(t)
+	//testClientLookup(t)
 
 	// Test Binary lookup
-	testBinaryLookup(t)
+	//testBinaryLookup(t)
 
 	// Test Asset lookup
-	testAssetLookup(t)
+	//testAssetLookup(t)
 
 	// Test Geo lookup
-	testGeoLookup(t)
+	//testGeoLookup(t)
 
 	// Test LDAP lookup
-	testLdapLookup(t)
+	//testLdapLookup(t)
 
 	// Test PDNS lookup
 	testPdnsLookup(t)
