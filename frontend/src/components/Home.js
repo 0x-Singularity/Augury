@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Results from "./Results";
 import "./Home.css";
 
@@ -7,7 +7,15 @@ function Home() {
   const [activeTabId, setActiveTabId] = useState(null);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState("");
 
+  // Load the username from localStorage when the component mounts
+  useEffect(() => {
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    }
+  }, []);
   const extractFirstIOC = (data) => {
     const iocs = Object.keys(data?.data || {});
     return iocs.length > 0 ? iocs[0] : "Results";
@@ -24,7 +32,7 @@ function Home() {
         method: "POST",
         headers: {
           "Content-Type": "text/plain",
-          "X-User-Name": "demo_user",
+          "X-User-Name": username, //getting username from localStorage
         },
         body: query,
       });

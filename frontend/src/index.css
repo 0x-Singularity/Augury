@@ -55,6 +55,18 @@ h2 {
   padding: 10px 20px;
 }
 
+.user-button{
+  padding: 10px;
+  border-radius: 40px;
+  background-color: #89b4fa;
+  font-size: 0.9rem;
+  color: #2c2e47;
+  outline: none;
+  transition: "box-shadow 0.3s ease";
+  margin-left: 10px;
+  cursor: pointer;
+}
+
 .search-box input::placeholder {
   color: #2c2e47;
   opacity: 0.6;
