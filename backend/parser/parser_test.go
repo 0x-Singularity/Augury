@@ -13,6 +13,9 @@ func TestParser(t *testing.T) {
 	// Test Client lookup
 	//testClientLookup(t)
 
+	// Test Host lookup
+	testHostLookup(t)
+
 	// Test Binary lookup
 	//testBinaryLookup(t)
 
@@ -26,7 +29,61 @@ func TestParser(t *testing.T) {
 	//testLdapLookup(t)
 
 	// Test PDNS lookup
-	testPdnsLookup(t)
+	//testPdnsLookup(t)
+}
+
+// Print function to send results of parsing to the console
+func printResults(result map[string]map[string][]FakeulaEntry) {
+	for source, sourceMap := range result {
+		fmt.Printf("Source: %s\n", source)
+		for structType, entries := range sourceMap {
+			fmt.Printf("  Structure Type: %s\n", structType)
+			for i, entry := range entries {
+				fmt.Printf("    Entry %d: %+v\n", i+1, entry)
+
+				// Print Oil data if present
+				if entry.Oil != nil {
+					fmt.Printf("      Oil Data: %+v\n", *entry.Oil)
+				}
+
+				// Print Client data if present
+				if entry.Client != nil {
+					fmt.Printf("      Client Data: %+v\n", *entry.Client)
+				}
+
+				// Print Host data if present
+				if entry.Host != nil {
+					fmt.Printf("      Host Data: %+v\n", *entry.Host)
+				}
+
+				// Print Binary data if present
+				if entry.Binary != nil {
+					fmt.Printf("      Binary Data: %+v\n", *entry.Binary)
+				}
+
+				// Print Asset data if present
+				if entry.Asset != nil {
+					fmt.Printf("      Asset Data: %+v\n", *entry.Asset)
+				}
+
+				// Print Geo data if present
+				if entry.Geo != nil {
+					fmt.Printf("      Geo Data: %+v\n", *entry.Geo)
+				}
+
+				// Print LDAP data if present
+				if entry.LDAP != nil {
+					fmt.Printf("      LDAP Data: %+v\n", *entry.LDAP)
+				}
+
+				// Print PDNS data if present
+				if entry.PDNS != nil {
+					fmt.Printf("      PDNS Data: %+v\n", *entry.PDNS)
+					fmt.Printf("      PDNS Answers: %d records\n", len(entry.PDNS.Answers))
+				}
+			}
+		}
+	}
 }
 
 // Using Azure sample data for testing
@@ -88,53 +145,42 @@ func testClientLookup(t *testing.T) {
 	printResults(result.Data)
 }
 
-// Print function to send results of parsing to the console
-func printResults(result map[string]map[string][]FakeulaEntry) {
-	for source, sourceMap := range result {
-		fmt.Printf("Source: %s\n", source)
-		for structType, entries := range sourceMap {
-			fmt.Printf("  Structure Type: %s\n", structType)
-			for i, entry := range entries {
-				fmt.Printf("    Entry %d: %+v\n", i+1, entry)
+func testHostLookup(t *testing.T) {
+	// sample host response
+	hostJSON := `{
+  "data": [
+    {
+      "sensor": {
+        "hostname": "host1",
+        "id": 78065,
+        "ip": [
+          "192.168.0.1"
+        ],
+        "mac": [
+          "00:00:00:00:00:01"
+        ],
+        "name": "host1.example.com",
+        "uptime": 593924,
+        "os": {
+          "full": "Windows 10 Enterprise, 64-bit",
+          "version": "007.003.000.18311"
+        }
+      },
+      "labels": {
+        "url": "https://cbr.example.com/#/host/78065"
+      }
+    }
+  ]
+}`
 
-				// Print Oil data if present
-				if entry.Oil != nil {
-					fmt.Printf("      Oil Data: %+v\n", *entry.Oil)
-				}
+	var hostResponse map[string]interface{}
+	json.Unmarshal([]byte(hostJSON), &hostResponse)
 
-				// Print Client data if present
-				if entry.Client != nil {
-					fmt.Printf("      Client Data: %+v\n", *entry.Client)
-				}
+	result := FormatFakeulaResponse(hostResponse)
 
-				// Print Binary data if present
-				if entry.Binary != nil {
-					fmt.Printf("      Binary Data: %+v\n", *entry.Binary)
-				}
-
-				// Print Asset data if present
-				if entry.Asset != nil {
-					fmt.Printf("      Asset Data: %+v\n", *entry.Asset)
-				}
-
-				// Print Geo data if present
-				if entry.Geo != nil {
-					fmt.Printf("      Geo Data: %+v\n", *entry.Geo)
-				}
-
-				// Print LDAP data if present
-				if entry.LDAP != nil {
-					fmt.Printf("      LDAP Data: %+v\n", *entry.LDAP)
-				}
-
-				// Print PDNS data if present
-				if entry.PDNS != nil {
-					fmt.Printf("      PDNS Data: %+v\n", *entry.PDNS)
-					fmt.Printf("      PDNS Answers: %d records\n", len(entry.PDNS.Answers))
-				}
-			}
-		}
-	}
+	// Print and verify the result
+	// Similar to the client lookup verification
+	printResults(result.Data)
 }
 
 func testBinaryLookup(t *testing.T) {

@@ -24,6 +24,7 @@ type ResultsCache map[string]MultiLevelMap
 type FakeulaEntry struct {
 	Oil    *OilInfo    `json:"oil"`
 	Client *ClientInfo `json:"client,omitempty"`
+	Host   *HostInfo   `json:"host,omitempty`
 	Binary *BinaryInfo `json:"binary,omitempty"`
 	Asset  *AssetInfo  `json:"asset,omitempty"`
 	Geo    *GeoInfo    `json:"geo,omitempty"`
@@ -48,6 +49,20 @@ type ClientInfo struct {
 	AsOrg string `json:"as_org"`
 	ASN   int    `json:"asn"`
 	IP    string `json:"ip"`
+}
+
+// HostInfo struct to match CBR Host response
+
+type HostInfo struct {
+	Hostname string   `json:"hostname"`
+	Name     string   `json:"name"`
+	ID       int      `json:"id"`
+	IPs      []string `json:"ips"`
+	MACs     []string `json:"macs"`
+	Uptime   int      `json:"uptime"`
+	OSFull   string   `json:"os_full"`
+	OSVer    string   `json:"os_version"`
+	URL      string   `json:"url"`
 }
 
 // BinaryInfo struct to match the CBR JSON structure, this one has a lot of nested stuff
@@ -137,6 +152,7 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 				parsedEntry := FakeulaEntry{
 					Oil:    parseOil(entryMap),
 					Client: parseClient(entryMap),
+					Host:   parseHost(entryMap),
 					Binary: parseBinary(entryMap),
 					Asset:  parseAsset(entryMap),
 					Geo:    parseGeo(entryMap),
@@ -195,6 +211,9 @@ func getStructureTypes(entry *FakeulaEntry) []string {
 	}
 	if entry.Client != nil {
 		structTypes = append(structTypes, "client")
+	}
+	if entry.Host != nil {
+		structTypes = append(structTypes, "host")
 	}
 	if entry.Binary != nil {
 		structTypes = append(structTypes, "binary")
@@ -271,6 +290,56 @@ func parseClient(entryMap map[string]interface{}) *ClientInfo {
 	return nil
 }
 
+// CBR has three different types of responses, Host, Process, and Binary
+
+// Host
+func parseHost(entryMap map[string]interface{}) *HostInfo {
+	// "sensor" is the keyword in the JSON response that Host info is nested under
+	if sensor, ok := entryMap["sensor"].(map[string]interface{}); ok {
+		host := &HostInfo{
+			Hostname: getString(sensor, "hostname"),
+			Name:     getString(sensor, "name"),
+			ID:       getInt(sensor, "id"),
+			Uptime:   getInt(sensor, "uptime"),
+		}
+
+		// IP addresses
+		if ips, ok := sensor["ip"].([]interface{}); ok {
+			for _, ip := range ips {
+				if s, ok := ip.(string); ok {
+					host.IPs = append(host.IPs, s)
+				}
+			}
+		}
+
+		// MAC addresses
+		if macs, ok := sensor["mac"].([]interface{}); ok {
+			for _, mac := range macs {
+				if s, ok := mac.(string); ok {
+					host.MACs = append(host.MACs, s)
+				}
+			}
+		}
+
+		// OS info
+		if os, ok := sensor["os"].(map[string]interface{}); ok {
+			host.OSFull = getString(os, "full")
+			host.OSVer = getString(os, "version")
+		}
+
+		// Labels (URL)
+		if labels, ok := entryMap["labels"].(map[string]interface{}); ok {
+			host.URL = getString(labels, "url")
+		}
+
+		if host.Hostname != "" || host.Name != "" {
+			return host
+		}
+	}
+	return nil
+}
+
+// Binary
 func parseBinary(entryMap map[string]interface{}) *BinaryInfo {
 	// Try to extract file information
 	// Skip looking for "binary" keyword, binary responses are nested under "file"
@@ -461,12 +530,19 @@ func parsePDNS(entryMap map[string]interface{}) *PDNSInfo {
 func getSource(entryMap map[string]interface{}) string {
 	// Attempt to determine the source based on the presence of known substructures.
 
-	// 1. Check client info
+	// Check client info
 	if _, ok := entryMap["client"].(map[string]interface{}); ok {
 		return "client"
 	}
 
-	// 2. Check binary info (direct or nested under "file")
+	//Check CBR responses
+
+	//Check host info
+	if _, ok := entryMap["sensor"].(map[string]interface{}); ok {
+		return "host"
+	}
+
+	// Check binary info (direct or nested under "file")
 	if _, ok := entryMap["binary"].(map[string]interface{}); ok {
 		return "binary"
 	}
@@ -474,7 +550,7 @@ func getSource(entryMap map[string]interface{}) string {
 		return "binary"
 	}
 
-	// 3. Check asset info
+	// Check asset info
 	if _, ok := entryMap["asset"].(map[string]interface{}); ok {
 		return "asset"
 	}
@@ -484,7 +560,7 @@ func getSource(entryMap map[string]interface{}) string {
 		}
 	}
 
-	// 4. Check geo info
+	// Check geo info
 	if _, ok := entryMap["geo"].(map[string]interface{}); ok {
 		return "geo"
 	}
@@ -494,7 +570,7 @@ func getSource(entryMap map[string]interface{}) string {
 		}
 	}
 
-	// 5. Check LDAP info
+	// Check LDAP info
 	if _, ok := entryMap["ldap"].(map[string]interface{}); ok {
 		return "ldap"
 	}
@@ -502,7 +578,7 @@ func getSource(entryMap map[string]interface{}) string {
 		return "ldap"
 	}
 
-	// 6. Check PDNS info
+	// Check PDNS info
 	if _, ok := entryMap["pdns"].(map[string]interface{}); ok {
 		return "pdns"
 	}
@@ -512,19 +588,19 @@ func getSource(entryMap map[string]interface{}) string {
 		}
 	}
 
-	// 7. Fallback to "oil" field if it exists and has a recognizable value
+	// Fallback to "oil" field if it exists and has a recognizable value
 	if oil, ok := entryMap["oil"].(string); ok && oil != "" {
 		return oil
 	}
 
-	// 8. Try megaoil pipeline
+	// Try megaoil pipeline
 	if megaoil, ok := entryMap["megaoil"].(map[string]interface{}); ok {
 		if pipeline, ok := megaoil["pipeline"].(string); ok {
 			return pipeline
 		}
 	}
 
-	// 9. Try event.module as a fallback
+	// Try event.module as a fallback
 	if event, ok := entryMap["event"].(map[string]interface{}); ok {
 		if mod, ok := event["module"].(string); ok {
 			return mod
