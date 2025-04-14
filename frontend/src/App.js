@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
 import OilView from "./components/OilView"; 
 import Login from "./components/Login";
+import IOCView from "./components/IOCView";
 
 function App() {
   const[username, setUsername] = useState("");
@@ -77,7 +78,7 @@ function App() {
         ) : (
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/oil" element={<OilView />} />
+          <Route path="/view" element={<IOCView/>} /> {/* Universal View */}
         </Routes>
         )}
       </div>

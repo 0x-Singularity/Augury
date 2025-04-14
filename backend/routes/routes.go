@@ -15,5 +15,10 @@ func SetupRoutes(router *mux.Router) {
 	apiRouter.HandleFunc("/ioc/extract", controllers.ExtractFromText).Methods("POST", "OPTIONS")
 
 	apiRouter.HandleFunc("/ioc/oil", controllers.QueryAllOIL).Methods("GET")
-
+	apiRouter.HandleFunc("/ioc/pdns", controllers.QueryPDNS).Methods("GET", "OPTIONS")
+	apiRouter.HandleFunc("/ioc/ldap", controllers.QueryLDAP).Methods("GET", "OPTIONS")
+	apiRouter.HandleFunc("/ioc/geo", controllers.QueryGeoIP).Methods("GET", "OPTIONS")
+	apiRouter.HandleFunc("/ioc/binary", controllers.QueryBinary).Methods("GET", "OPTIONS")
+	apiRouter.HandleFunc("/ioc/vpn", controllers.QueryVPN).Methods("GET", "OPTIONS")
+	apiRouter.HandleFunc("/ioc/tor", controllers.QueryCBR).Methods("GET", "OPTIONS")
 }
