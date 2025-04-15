@@ -22,14 +22,15 @@ type ResultsCache map[string]MultiLevelMap
 // This is the main struct that contains all the different types of data that can be returned from a FAKEula query
 // Most fields are pointers so they can be nil if not present.
 type FakeulaEntry struct {
-	Oil    *OilInfo    `json:"oil"`
-	Client *ClientInfo `json:"client,omitempty"`
-	Host   *HostInfo   `json:"host,omitempty`
-	Binary *BinaryInfo `json:"binary,omitempty"`
-	Asset  *AssetInfo  `json:"asset,omitempty"`
-	Geo    *GeoInfo    `json:"geo,omitempty"`
-	LDAP   *LdapInfo   `json:"ldap,omitempty"`
-	PDNS   *PDNSInfo   `json:"pdns,omitempty"`
+	Oil     *OilInfo     `json:"oil"`
+	Client  *ClientInfo  `json:"client,omitempty"`
+	Process *ProcessInfo `json:"process,omitempty"`
+	Host    *HostInfo    `json:"host,omitempty`
+	Binary  *BinaryInfo  `json:"binary,omitempty"`
+	Asset   *AssetInfo   `json:"asset,omitempty"`
+	Geo     *GeoInfo     `json:"geo,omitempty"`
+	LDAP    *LdapInfo    `json:"ldap,omitempty"`
+	PDNS    *PDNSInfo    `json:"pdns,omitempty"`
 }
 
 // OilInfo
@@ -51,8 +52,28 @@ type ClientInfo struct {
 	IP    string `json:"ip"`
 }
 
-// HostInfo struct to match CBR Host response
+// ProcessInfo struct to match base CBR response, which is nested under the key word "process"
+type ProcessInfo struct {
+	Name           string   `json:"name"`
+	CommandLine    string   `json:"command_line"`
+	EntityID       string   `json:"entity_id"`
+	Executable     string   `json:"executable"`
+	PID            int      `json:"pid"`
+	Start          string   `json:"start"`
+	Uptime         int      `json:"uptime"`
+	ParentName     string   `json:"parent_name"`
+	ParentPID      int      `json:"parent_pid"`
+	ParentEntityID string   `json:"parent_entity_id"`
+	UserName       string   `json:"user_name"`
+	HostName       string   `json:"host_name"`
+	HostType       string   `json:"host_type"`
+	HostIPs        []string `json:"host_ips"`
+	HostOS         string   `json:"host_os"`
+	CodeSigned     bool     `json:"code_signed"`
+	URL            string   `json:"url"`
+}
 
+// HostInfo struct to match CBR Host response
 type HostInfo struct {
 	Hostname string   `json:"hostname"`
 	Name     string   `json:"name"`
@@ -150,14 +171,15 @@ func FormatFakeulaResponse(response map[string]interface{}) ParsedFakeulaResult 
 			if entryMap, ok := entry.(map[string]interface{}); ok {
 				// Create a FakeulaEntry struct and populate it with data from the entry map
 				parsedEntry := FakeulaEntry{
-					Oil:    parseOil(entryMap),
-					Client: parseClient(entryMap),
-					Host:   parseHost(entryMap),
-					Binary: parseBinary(entryMap),
-					Asset:  parseAsset(entryMap),
-					Geo:    parseGeo(entryMap),
-					LDAP:   parseLdap(entryMap),
-					PDNS:   parsePDNS(entryMap),
+					Oil:     parseOil(entryMap),
+					Client:  parseClient(entryMap),
+					Process: parseProcess(entryMap),
+					Host:    parseHost(entryMap),
+					Binary:  parseBinary(entryMap),
+					Asset:   parseAsset(entryMap),
+					Geo:     parseGeo(entryMap),
+					LDAP:    parseLdap(entryMap),
+					PDNS:    parsePDNS(entryMap),
 				}
 
 				// Extract keys for organizing the data in the MultiLevelMap
@@ -211,6 +233,9 @@ func getStructureTypes(entry *FakeulaEntry) []string {
 	}
 	if entry.Client != nil {
 		structTypes = append(structTypes, "client")
+	}
+	if entry.Process != nil {
+		structTypes = append(structTypes, "process")
 	}
 	if entry.Host != nil {
 		structTypes = append(structTypes, "host")
@@ -291,6 +316,69 @@ func parseClient(entryMap map[string]interface{}) *ClientInfo {
 }
 
 // CBR has three different types of responses, Host, Process, and Binary
+
+// Process (base CBR response)
+func parseProcess(entryMap map[string]interface{}) *ProcessInfo {
+	if processMap, ok := entryMap["process"].(map[string]interface{}); ok {
+		process := &ProcessInfo{
+			CommandLine: getString(processMap, "command_line"),
+			EntityID:    getString(processMap, "entity_id"),
+			Executable:  getString(processMap, "executable"),
+			Name:        getString(processMap, "name"),
+			PID:         getInt(processMap, "pid"),
+			Start:       getString(processMap, "start"),
+			Uptime:      getInt(processMap, "uptime"),
+		}
+
+		// Parent info
+		if parent, ok := processMap["parent"].(map[string]interface{}); ok {
+			process.ParentName = getString(parent, "name")
+			process.ParentPID = getInt(parent, "pid")
+			process.ParentEntityID = getString(parent, "entity_id")
+		}
+
+		// User info
+		if user, ok := processMap["user"].(map[string]interface{}); ok {
+			process.UserName = getString(user, "name")
+		}
+
+		// Host info
+		if host, ok := processMap["host"].(map[string]interface{}); ok {
+			process.HostName = getString(host, "name")
+			process.HostType = getString(host, "type")
+
+			// Check if there are multiple ips, then append them
+			if ips, ok := host["ip"].([]interface{}); ok {
+				for _, ip := range ips {
+					if ipStr, ok := ip.(string); ok {
+						process.HostIPs = append(process.HostIPs, ipStr)
+					}
+				}
+			}
+
+			if os, ok := host["os"].(map[string]interface{}); ok {
+				process.HostOS = getString(os, "family")
+			}
+		}
+
+		// Code signature
+		if signature, ok := processMap["code_signature"].(map[string]interface{}); ok {
+			if exists, ok := signature["exists"].(bool); ok {
+				process.CodeSigned = exists
+			}
+		}
+
+		// URL from labels
+		if labels, ok := entryMap["labels"].(map[string]interface{}); ok {
+			process.URL = getString(labels, "url")
+		}
+
+		if process.Name != "" || process.Executable != "" {
+			return process
+		}
+	}
+	return nil
+}
 
 // Host
 func parseHost(entryMap map[string]interface{}) *HostInfo {
@@ -536,6 +624,11 @@ func getSource(entryMap map[string]interface{}) string {
 	}
 
 	//Check CBR responses
+
+	//Check process info
+	if _, ok := entryMap["process"].(map[string]interface{}); ok {
+		return "process"
+	}
 
 	//Check host info
 	if _, ok := entryMap["sensor"].(map[string]interface{}); ok {

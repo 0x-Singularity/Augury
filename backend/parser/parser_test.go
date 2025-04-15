@@ -13,8 +13,11 @@ func TestParser(t *testing.T) {
 	// Test Client lookup
 	//testClientLookup(t)
 
+	// Test Process (base CBR) lookup
+	testProcessLookup(t)
+
 	// Test Host lookup
-	testHostLookup(t)
+	//testHostLookup(t)
 
 	// Test Binary lookup
 	//testBinaryLookup(t)
@@ -49,6 +52,11 @@ func printResults(result map[string]map[string][]FakeulaEntry) {
 				// Print Client data if present
 				if entry.Client != nil {
 					fmt.Printf("      Client Data: %+v\n", *entry.Client)
+				}
+
+				// Print Process data if present
+				if entry.Process != nil {
+					fmt.Printf("      Process Data: %v\n", *&entry.Process)
 				}
 
 				// Print Host data if present
@@ -145,6 +153,61 @@ func testClientLookup(t *testing.T) {
 	printResults(result.Data)
 }
 
+func testProcessLookup(t *testing.T) {
+	processJSON := `{
+  "data": [
+    {
+      "process": {
+        "command_line": "/usr/local/java/java_base/bin/java -Dp=executionserver -server -d64 -verbose:gc",
+        "entity_id": "00003094-0000-13ad-01d8-6a476fb04ab2",
+        "executable": "/bw/local/java/jdk1.8.0_312/bin/java",
+        "name": "java",
+        "pid": 5037,
+        "start": "2022-05-17T23:40:05.647Z",
+        "uptime": 53818,
+        "hash": {
+          "md5": "fb8b6d549055579989a7184077408342"
+        },
+        "parent": {
+          "name": "bash",
+          "pid": 5028,
+          "entity_id": "00003094-0000-13a4-01d8-6a476faec8c6-000000000001"
+        },
+        "user": {
+          "name": "alice",
+          "id": null
+        },
+        "host": {
+          "name": "host1",
+          "type": "workstation",
+          "ip": [
+            "192.168.0.1"
+          ],
+          "os": {
+            "family": "linux"
+          }
+        },
+        "code_signature": {
+          "exists": false
+        }
+      },
+      "labels": {
+        "url": "https://cbr.example.com/#/analyze/00003094-0000-13ad-01d8-6a476fb04ab2/1652830876949?cb.legacy_5x_mode=false"
+      }
+    }
+  ]
+}`
+
+	var processResponse map[string]interface{}
+	json.Unmarshal([]byte(processJSON), &processResponse)
+
+	result := FormatFakeulaResponse(processResponse)
+
+	// Print and verify the result
+	// Similar to the client lookup verification
+	printResults(result.Data)
+}
+
 func testHostLookup(t *testing.T) {
 	// sample host response
 	hostJSON := `{
@@ -179,7 +242,6 @@ func testHostLookup(t *testing.T) {
 	result := FormatFakeulaResponse(hostResponse)
 
 	// Print and verify the result
-	// Similar to the client lookup verification
 	printResults(result.Data)
 }
 
@@ -217,7 +279,6 @@ func testBinaryLookup(t *testing.T) {
 	result := FormatFakeulaResponse(binaryResponse)
 
 	// Print and verify the result
-	// Similar to the client lookup verification
 	printResults(result.Data)
 }
 
