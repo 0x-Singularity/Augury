@@ -113,7 +113,7 @@ type AssetInfo struct {
 type GeoInfo struct {
 	CountryCode string `json:"countryCode"`
 	CountryName string `json:"countryName"`
-	City        string `json:"city"`
+	//City        string `json:"city"`
 	//Latitude    float64 `json:"latitude"`
 	//Longitude   float64 `json:"longitude"`
 	ASNumber string `json:"asNumber"`
@@ -531,7 +531,7 @@ func parseGeo(entryMap map[string]interface{}) *GeoInfo {
 		geo := &GeoInfo{
 			CountryCode: getString(geoData, "country_iso_code"),
 			CountryName: getString(geoData, "country_name"),
-			City:        getString(geoData, "city"),
+			//City:        getString(geoData, "city"),
 			//Latitude:    getFloat(geoData, "latitude"),
 			//Longitude:   getFloat(geoData, "longitude"),
 		}
@@ -545,7 +545,7 @@ func parseGeo(entryMap map[string]interface{}) *GeoInfo {
 			}
 		}
 
-		// Pull ASN info from top-level "as" field (not nested under geo)
+		// Pull ASN info from top-level "as" field
 		if asData, ok := entryMap["as"].(map[string]interface{}); ok {
 			geo.ASNumber = getString(asData, "number")
 
