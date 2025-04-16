@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./components/Home";
-import OilView from "./components/OilView"; 
 import Login from "./components/Login";
 import IOCView from "./components/IOCView";
 
