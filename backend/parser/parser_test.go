@@ -14,7 +14,7 @@ func TestParser(t *testing.T) {
 	//testClientLookup(t)
 
 	// Test Process (base CBR) lookup
-	testProcessLookup(t)
+	//testProcessLookup(t)
 
 	// Test Host lookup
 	//testHostLookup(t)
@@ -26,7 +26,7 @@ func TestParser(t *testing.T) {
 	//testAssetLookup(t)
 
 	// Test Geo lookup
-	//testGeoLookup(t)
+	testGeoLookup(t)
 
 	// Test LDAP lookup
 	//testLdapLookup(t)

@@ -111,13 +111,14 @@ type AssetInfo struct {
 }
 
 type GeoInfo struct {
-	CountryCode string  `json:"countryCode"`
-	CountryName string  `json:"countryName"`
-	City        string  `json:"city"`
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	ASNumber    string  `json:"asNumber"`
-	ASOrg       string  `json:"asOrg"`
+	CountryCode string `json:"countryCode"`
+	CountryName string `json:"countryName"`
+	City        string `json:"city"`
+	//Latitude    float64 `json:"latitude"`
+	//Longitude   float64 `json:"longitude"`
+	ASNumber string `json:"asNumber"`
+	ASOrg    string `json:"asOrg"`
+	IP       string `json:"ip"`
 }
 
 type LdapInfo struct {
@@ -527,26 +528,36 @@ func parseAsset(entryMap map[string]interface{}) *AssetInfo {
 
 func parseGeo(entryMap map[string]interface{}) *GeoInfo {
 	if geoData, ok := entryMap["geo"].(map[string]interface{}); ok {
-		geo := &GeoInfo{}
+		geo := &GeoInfo{
+			CountryCode: getString(geoData, "country_iso_code"),
+			CountryName: getString(geoData, "country_name"),
+			City:        getString(geoData, "city"),
+			//Latitude:    getFloat(geoData, "latitude"),
+			//Longitude:   getFloat(geoData, "longitude"),
+		}
 
-		// Extract country and city info
-		geo.CountryCode = getString(geoData, "country_iso_code")
-		geo.CountryName = getString(geoData, "country_name")
-		geo.City = getString(geoData, "city")
-		geo.Latitude = getFloat(geoData, "latitude")
-		geo.Longitude = getFloat(geoData, "longitude")
+		// Pull IP from "host.ip" if available
+		if host, ok := entryMap["host"].(map[string]interface{}); ok {
+			if ipList, ok := host["ip"].([]interface{}); ok && len(ipList) > 0 {
+				if ipStr, ok := ipList[0].(string); ok {
+					geo.IP = ipStr
+				}
+			}
+		}
 
-		// Try to extract AS info if available
-		if as, ok := geoData["as"].(map[string]interface{}); ok {
-			geo.ASNumber = getString(as, "number")
+		// Pull ASN info from top-level "as" field (not nested under geo)
+		if asData, ok := entryMap["as"].(map[string]interface{}); ok {
+			geo.ASNumber = getString(asData, "number")
 
-			// Extract organization name
-			if org, ok := as["organization"].(map[string]interface{}); ok {
+			if org, ok := asData["organization"].(map[string]interface{}); ok {
 				geo.ASOrg = getString(org, "name")
 			}
 		}
 
-		return geo
+		// Return only if country or IP exists
+		if geo.CountryCode != "" || geo.IP != "" {
+			return geo
+		}
 	}
 	return nil
 }
