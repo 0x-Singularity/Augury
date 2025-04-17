@@ -100,6 +100,15 @@ func queryFakeulaForIOC(ioc, userName string) (map[string]interface{}, error) {
 
 	rawResponse := make(map[string]interface{})
 
+	//--- Query Binary ---
+	binaryURL := fmt.Sprintf("%scbr/binary/%s", baseURL, ioc)
+	binaryData, err := fetchJSON(client, binaryURL, authUser, authPass)
+	if err != nil {
+		log.Printf("Binary query failed for %s: %v", ioc, err)
+	} else {
+		rawResponse["binary"] = binaryData
+	}
+
 	// --- Query Netflow ---
 	netflowURL := fmt.Sprintf("%soil/netflow/%s", baseURL, ioc)
 	netflowData, err := fetchJSON(client, netflowURL, authUser, authPass)
@@ -247,7 +256,6 @@ func QueryAllOIL(w http.ResponseWriter, r *http.Request) {
 	//Run oilData through the parser
 
 	parsed := parser.FormatFakeulaResponse(oilData)
-
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(parsed)
 }
@@ -388,7 +396,7 @@ func QueryBinary(w http.ResponseWriter, r *http.Request) {
 	user := os.Getenv("FAKEULA_USER")
 	pass := os.Getenv("FAKEULA_PASS")
 
-	url := fmt.Sprintf("%sbinary/%s", baseURL, ioc)
+	url := fmt.Sprintf("%scbr/binary/%s", baseURL, ioc)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		http.Error(w, "Failed to build Binary query", http.StatusInternalServerError)
@@ -453,4 +461,83 @@ func QueryVPN(w http.ResponseWriter, r *http.Request) {
 	// No specific parser for VPN, return raw data
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(vpnData)
+}
+
+func QueryCBR(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%scbr/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build CBR query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query CBR", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var cbrData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&cbrData); err != nil {
+		http.Error(w, "Error decoding CBR data", http.StatusInternalServerError)
+		return
+	}
+
+	//parse the CBR data
+	parsed := parser.FormatFakeulaResponse(cbrData)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(parsed)
+}
+func QueryHost(w http.ResponseWriter, r *http.Request) {
+	ioc := r.URL.Query().Get("ioc")
+	if ioc == "" {
+		http.Error(w, "IOC parameter is required", http.StatusBadRequest)
+		return
+	}
+
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	client := &http.Client{}
+	user := os.Getenv("FAKEULA_USER")
+	pass := os.Getenv("FAKEULA_PASS")
+
+	url := fmt.Sprintf("%scbr/sensor/%s", baseURL, ioc)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		http.Error(w, "Failed to build Host query", http.StatusInternalServerError)
+		return
+	}
+	req.SetBasicAuth(user, pass)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		http.Error(w, "Failed to query Host", http.StatusInternalServerError)
+		return
+	}
+	defer resp.Body.Close()
+
+	var hostData map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&hostData); err != nil {
+		http.Error(w, "Error decoding CBR data", http.StatusInternalServerError)
+		return
+	}
+
+	//parse the CBR data
+	parsed := parser.FormatFakeulaResponse(hostData)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(parsed)
 }

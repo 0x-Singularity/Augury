@@ -1,5 +1,6 @@
 .App {
-  text-align: center;
+  min-height: 100vh;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .App-logo {
@@ -35,4 +36,37 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.App.light {
+  background-color: #f7f7f7;
+  color: #222;
+}
+
+.App.light .theme-toggle button {
+  background: #e0e0e0;
+  color: #222;
+}
+
+/* Theme toggle placement */
+.theme-toggle {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+}
+
+.theme-toggle button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  background: #444;
+  color: white;
+  border: none;
+  font-size: 14px;
+}
+
+.content {
+  font-family: "Poppins", sans-serif;
+  padding: 100px;
+  text-align: center;
 }

@@ -1,23 +1,53 @@
 import React from "react";
 import "./OilTable.css";
 
-function IOCTable({ results }) {
+// ────────────────────────────────────────────────────────────────────────────────
+// helpers
+// ────────────────────────────────────────────────────────────────────────────────
+
+/** Convert snake_case → "Sentence Case" for labels */
+const toLabel = (key) =>
+  key
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+/**
+ * One field line.  When "link" is given, render the value as an <a> tag.
+ */
+function FieldRow({ label, value, link }) {
+  if (
+    value === null ||
+    value === undefined ||
+    (Array.isArray(value) && value.length === 0) ||
+    (typeof value === "string" && value.trim() === "")
+  )
+    return null;
+
+  const printable = Array.isArray(value) ? value.join(", ") : value.toString();
+  const content = link ? (
+    <a href={link}>{printable}</a>
+  ) : (
+    <span>{printable}</span>
+  );
+
+  return (
+    <div className="field-row">
+      <strong>{label}: </strong>
+      {content}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────────
+// main component
+// ────────────────────────────────────────────────────────────────────────────────
+
+export default function IOCTable({ results }) {
   if (!results || !results.data) return <p>No results found.</p>;
-
-  const { data } = results;
-
-  const renderField = (label, value) => {
-    if (!value) return null;
-    return (
-      <div className="field-row">
-        <strong>{label}:</strong> <span>{value}</span>
-      </div>
-    );
-  };
 
   return (
     <div className="results-container">
-      {Object.entries(data).map(([source, structures]) => (
+      {Object.entries(results.data).map(([source, structures]) => (
         <div key={source} className="ioc-card">
           <h3 className="ioc-header">🔹 Source: {source}</h3>
 
@@ -26,110 +56,31 @@ function IOCTable({ results }) {
               <h4 className="source-label">📦 Type: {structureType}</h4>
 
               {entries.map((entry, idx) => {
-                const oil = entry.oil || {};
-                const client = entry.client || {};
-                const asset = entry.asset || {};
-                const binary = entry.binary || {};
-                const geo = entry.geo || {};
-                const ldap = entry.ldap || {};
-                const pdns = entry.pdns || {};
+                const record = entry[structureType] ?? {};
 
                 return (
                   <div key={idx} className="structured-entry">
-                    {/* Grouped fields by type */}
-                    {structureType === "oil" && (
-                      <>
-                        {renderField("Timestamp", oil.timestamp)}
-                        {renderField("User Principal", oil.userPrincipalName)}
-                        {renderField("Display Name", oil.displayName)}
-                        {renderField("Client IP", oil.clientIp)}
-                        {renderField("ASN Org", oil.clientAsOrg)}
-                        {renderField("Event Type", oil.eventType)}
-                        {renderField("Outcome", oil.outcome)}
-                        {renderField("Message", oil.message)}
-                      </>
-                    )}
+                    {Object.entries(record).map(([k, v]) => {
+                      // Special‑case: in a CBR "process" record, make host_name clickable.
+                      if (
+                        structureType === "process" &&
+                        (k === "host_name" || k === "hostname") &&
+                        typeof v === "string"
+                      ) {
+                        return (
+                          <FieldRow
+                            key={k}
+                            label={toLabel(k)}
+                            value={v}
+                            link={`/view?source=host&ioc=${encodeURIComponent(v)}`}
+                          />
+                        );
+                      }
 
-                    {structureType === "client" && (
-                      <>
-                        {renderField("Client IP", client.ip)}
-                        {renderField("ASN", client.asn)}
-                        {renderField("AS Org", client.as_org)}
-                      </>
-                    )}
-
-                    {structureType === "asset" && (
-                      <>
-                        {renderField("Host Name", asset.name)}
-                        {renderField("IP", asset.ip)}
-                        {renderField("Platform", asset.platformName)}
-                        {renderField("Platform Owner", asset.platformOwner)}
-                        {renderField("Executive", asset.executive)}
-                        {renderField("Stack", asset.stackName)}
-                        {renderField("Stack Owner", asset.stackOwner)}
-                        {renderField("Created", asset.created)}
-                        {renderField("Updated", asset.updated)}
-                      </>
-                    )}
-
-                    {structureType === "binary" && (
-                      <>
-                        {renderField("Filename", binary.filename)}
-                        {renderField("Accessed", binary.accessed)}
-                        {renderField("MD5", binary.md5)}
-                        {renderField("SHA256", binary.sha256)}
-                        {renderField("URL", binary.url)}
-                        {binary.hosts?.length > 0 && (
-                          <div className="field-row">
-                            <strong>Hosts:</strong> {binary.hosts.join(", ")}
-                          </div>
-                        )}
-                        {renderField("Code Signed", binary.codeSigned ? "Yes" : null)}
-                      </>
-                    )}
-
-                    {structureType === "geo" && (
-                      <>
-                        {renderField("City", geo.city)}
-                        {renderField("Country Code", geo.countryCode)}
-                        {renderField("Country Name", geo.countryName)}
-                        {renderField("Latitude", geo.latitude)}
-                        {renderField("Longitude", geo.longitude)}
-                        {renderField("AS Number", geo.asNumber)}
-                        {renderField("AS Org", geo.asOrg)}
-                      </>
-                    )}
-
-                    {structureType === "ldap" && (
-                      <>
-                        {renderField("Full Name", ldap.fullName)}
-                        {renderField("Name", ldap.name)}
-                        {renderField("Title", ldap.title)}
-                        {renderField("Email", ldap.email)}
-                        {renderField("Phone", ldap.phone)}
-                        {renderField("Mobile", ldap.mobile)}
-                        {renderField("Created", ldap.created)}
-                        {renderField("Manager", ldap.manager)}
-                        {renderField("Age", ldap.age)}
-                        {renderField("Company", ldap.companyName)}
-                      </>
-                    )}
-
-                    {structureType === "pdns" && pdns.answers?.length > 0 && (
-                      <>
-                        <div className="field-row"><strong>DNS Answers:</strong></div>
-                        {pdns.answers.map((a, i) => (
-                          <div key={i} className="field-row" style={{ marginLeft: "1rem" }}>
-                            {renderField("Name", a.name)}
-                            {renderField("Type", a.type)}
-                            {renderField("Data", a.data)}
-                            {renderField("Count", a.count)}
-                            {renderField("Start", a.start)}
-                            {renderField("End", a.end)}
-                          </div>
-                        ))}
-                      </>
-                    )}
+                      return (
+                        <FieldRow key={k} label={toLabel(k)} value={v} />
+                      );
+                    })}
                   </div>
                 );
               })}
@@ -140,6 +91,4 @@ function IOCTable({ results }) {
     </div>
   );
 }
-
-export default IOCTable;
 

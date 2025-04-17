@@ -3,6 +3,7 @@ package parser
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 )
 
 // MultiLevelMap is the data structure to store parsed FAKEula data.
@@ -25,7 +26,7 @@ type FakeulaEntry struct {
 	Oil     *OilInfo     `json:"oil"`
 	Client  *ClientInfo  `json:"client,omitempty"`
 	Process *ProcessInfo `json:"process,omitempty"`
-	Host    *HostInfo    `json:"host,omitempty`
+	Host    *HostInfo    `json:"host,omitempty"`
 	Binary  *BinaryInfo  `json:"binary,omitempty"`
 	Asset   *AssetInfo   `json:"asset,omitempty"`
 	Geo     *GeoInfo     `json:"geo,omitempty"`
@@ -497,6 +498,8 @@ func parseClient(entryMap map[string]interface{}) *ClientInfo {
 
 // Process (base CBR response)
 func parseProcess(entryMap map[string]interface{}) *ProcessInfo {
+	log.Println("Parsing process info")
+	log.Println(entryMap)
 	if processMap, ok := entryMap["process"].(map[string]interface{}); ok {
 		process := &ProcessInfo{
 			CommandLine: getString(processMap, "command_line"),

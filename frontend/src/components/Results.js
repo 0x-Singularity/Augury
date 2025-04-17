@@ -5,13 +5,14 @@ const LOOKUP_LINKS = (ioc) => ({
   LDAP: `/view?source=ldap&ioc=${encodeURIComponent(ioc)}`,
   GeoIP: `/view?source=geo&ioc=${encodeURIComponent(ioc)}`,
   Binary: `/view?source=binary&ioc=${encodeURIComponent(ioc)}`,
-  VPN: `/view?source=vpn&ioc=${encodeURIComponent(ioc)}`,
   Shodan: `https://www.shodan.io/search?query=${encodeURIComponent(ioc)}`,
+  VPN: `http://localhost:8080/api/vpn?ioc=${encodeURIComponent(ioc)}`, // Updated to link directly to the raw JSON
   Censys: `https://search.censys.io/search?resource=hosts&q=${encodeURIComponent(ioc)}`,
   Spur: `https://spur.us/search?q=${encodeURIComponent(ioc)}`,
   IP2Proxy: `https://www.ip2proxy.com/demo/${encodeURIComponent(ioc)}`,
   BGP: `https://bgpview.io/ip/${encodeURIComponent(ioc)}`,
   OIL: `/view?source=oil&ioc=${encodeURIComponent(ioc)}`,
+  CBR: `/view?source=cbr&ioc=${encodeURIComponent(ioc)}`,
 });
 
 function Results({ results }) {
@@ -26,6 +27,7 @@ function Results({ results }) {
           <tr>
             <th>IOC</th>
             <th>Look Ups</th>
+            <th>Binary</th>
             <th>Asset</th>
             <th>Security Log</th>
             <th>Hash</th>
@@ -36,6 +38,7 @@ function Results({ results }) {
         <tbody>
           {Object.entries(data).map(([ioc, entry]) => {
             const lookups = LOOKUP_LINKS(ioc);
+            const binary = entry.binary?.data || [];
             const assets = entry.asset?.data || [];
             const securityLogs = entry.coxsight?.data || [];
             const netflows = entry.netflow?.data || [];
@@ -47,16 +50,23 @@ function Results({ results }) {
                   <a href={`#`} style={{ color: "#fa8b8b", textDecoration: "underline" }}>{ioc}</a>
                 </td>
                 <td>
+                  <a href={lookups.CBR} target="_blank" rel="noopener noreferrer">CBR</a><br />
                   <a href={lookups.PDNS} target="_blank" rel="noopener noreferrer">PDNS</a><br />
                   <a href={lookups.LDAP} target="_blank" rel="noopener noreferrer">LDAP</a><br />
                   <a href={lookups.GeoIP} target="_blank" rel="noopener noreferrer">GeoIP</a><br />
-                  <a href={lookups.Binary} target="_blank" rel="noopener noreferrer">Binary</a><br />
                   <a href={lookups.VPN} target="_blank" rel="noopener noreferrer">VPN</a><br />
                   <a href={lookups.Shodan} target="_blank" rel="noopener noreferrer">Shodan</a> | 
                   <a href={lookups.Censys} target="_blank" rel="noopener noreferrer">Censys</a><br />
                   <a href={lookups.Spur} target="_blank" rel="noopener noreferrer">Spur</a> | 
                   <a href={lookups.IP2Proxy} target="_blank" rel="noopener noreferrer">IP2Proxy</a> | 
                   <a href={lookups.BGP} target="_blank" rel="noopener noreferrer">BGP View</a>
+                </td>
+                <td>
+                  {binary.length > 0 ? (
+                    <a href={lookups.Binary} target="_blank" rel="noopener noreferrer">Binary</a>
+                  ) : (
+                    <em>None</em>
+                  )}
                 </td>
                 <td>
                   {assets.length > 0 ? (
