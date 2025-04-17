@@ -50,6 +50,7 @@ function Results({ results }) {
                   <a href={`#`} style={{ color: "#fa8b8b", textDecoration: "underline" }}>{ioc}</a>
                 </td>
                 <td>
+                  <a href={lookups.CBR} target="_blank" rel="noopener noreferrer">CBR</a><br />
                   <a href={lookups.PDNS} target="_blank" rel="noopener noreferrer">PDNS</a><br />
                   <a href={lookups.LDAP} target="_blank" rel="noopener noreferrer">LDAP</a><br />
                   <a href={lookups.GeoIP} target="_blank" rel="noopener noreferrer">GeoIP</a><br />
