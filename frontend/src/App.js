@@ -6,11 +6,7 @@ import IOCView from "./components/IOCView";
 import "./App.css";
 
 function App() {
-  /**
-   * ----------------------
-   *  Local state & prefs
-   * ----------------------
-   */
+
   // user login
   const [username, setUsername] = useState("");
   const [showChangeButton, setShowChangeButton] = useState(false);
@@ -18,9 +14,6 @@ function App() {
   // theme (dark | light)
   const [theme, setTheme] = useState("dark");
 
-  /**
-   * Hydrate state from localStorage once, on mount
-   */
   useEffect(() => {
     setUsername(localStorage.getItem("username") ?? "");
     setTheme(localStorage.getItem("theme") ?? "dark");
@@ -48,16 +41,12 @@ function App() {
     });
   };
 
-  /**
-   * ----------------------
-   *        Render
-   * ----------------------
-   */
+
   return (
     <Router>
       <div className={`App ${theme}`} style={{ fontFamily: "Poppins, sans-serif", minHeight: "100vh" }}>
         {/* Theme toggle */}
-        <div className="theme-toggle" style={{ position: "absolute", top: "10px", left: "20px" }}>
+        <div className="theme-toggle" style={{ position: "fixed", bottom: "20px", right: "20px" }}>
           <button onClick={toggleTheme}>
             Switch to {theme === "dark" ? "Light" : "Dark"} Mode
           </button>
@@ -122,3 +111,4 @@ function App() {
 }
 
 export default App;
+
