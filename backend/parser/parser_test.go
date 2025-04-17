@@ -38,56 +38,56 @@ func TestParser(t *testing.T) {
 // Print function to send results of parsing to the console
 func printResults(result map[string]map[string][]FakeulaEntry) {
 	for source, sourceMap := range result {
-		fmt.Printf("Source: %s\n", source)
+		prettyPrint("Source: ", source)
 		for structType, entries := range sourceMap {
-			fmt.Printf("  Structure Type: %s\n", structType)
+			prettyPrint("  Structure Type: ", structType)
 			for i, entry := range entries {
 				fmt.Printf("    Entry %d: %+v\n", i+1, entry)
 
 				// Print Oil data if present
 				if entry.Oil != nil {
-					fmt.Printf("      Oil Data: %+v\n", *entry.Oil)
+					prettyPrint("Oil Data: ", entry.Oil)
 				}
 
 				// Print Client data if present
 				if entry.Client != nil {
-					fmt.Printf("      Client Data: %+v\n", *entry.Client)
+					prettyPrint("Client Data: ", entry.Client)
 				}
 
 				// Print Process data if present
 				if entry.Process != nil {
-					fmt.Printf("      Process Data: %v\n", *&entry.Process)
+					prettyPrint("Process Data: ", entry.Process)
 				}
 
 				// Print Host data if present
 				if entry.Host != nil {
-					fmt.Printf("      Host Data: %+v\n", *entry.Host)
+					prettyPrint("Host Data: ", entry.Host)
 				}
 
 				// Print Binary data if present
 				if entry.Binary != nil {
-					fmt.Printf("      Binary Data: %+v\n", *entry.Binary)
+					prettyPrint("Binary Data: ", entry.Binary)
 				}
 
 				// Print Asset data if present
 				if entry.Asset != nil {
-					fmt.Printf("      Asset Data: %+v\n", *entry.Asset)
+					prettyPrint("Asset Data: ", entry.Asset)
 				}
 
 				// Print Geo data if present
 				if entry.Geo != nil {
-					fmt.Printf("      Geo Data: %+v\n", *entry.Geo)
+					prettyPrint("Geo Data: ", entry.Geo)
 				}
 
 				// Print LDAP data if present
 				if entry.LDAP != nil {
-					fmt.Printf("      LDAP Data: %+v\n", *entry.LDAP)
+					prettyPrint("LDAP Data: ", entry.LDAP)
 				}
 
 				// Print PDNS data if present
 				if entry.PDNS != nil {
-					fmt.Printf("      PDNS Data: %+v\n", *entry.PDNS)
-					fmt.Printf("      PDNS Answers: %d records\n", len(entry.PDNS.Answers))
+					prettyPrint("PDNS Data: ", entry.PDNS)
+					prettyPrint("      PDNS Answers: %d records\n", len(entry.PDNS.Answers))
 				}
 			}
 		}
@@ -99,19 +99,25 @@ func testOilLookup(t *testing.T) {
 	oilJSON := `{
   "data": [
     {
-      "callerIpAddress": "1.2.3.4",
-      "coxAccountName": "abob",
-      "userPrincipalName": "alice.bob@example.com",
-      "userDisplayName": "Alice Bob",
-      "displayName": "laptop1",
-      "client": {
-        "as_org": "ASN-ACME",
-        "ip": "1.2.3.4",
-        "asn": 1234
+      "network": {
+        "transport": "UDP"
       },
-      "timestamp": "2025-01-23T21:15:51.439Z",
+      "source": {
+        "address": "10.0.0.1",
+        "ip": "10.0.0.1",
+        "port": "53015"
+      },
+      "destination": {
+        "address": "1.2.3.4",
+        "ip": "1.2.3.4",
+        "port": "25762"
+      },
+      "event": {
+        "start": "2025-01-23T21:05:00Z",
+        "end": "2025-01-23T21:09:59Z"
+      },
       "key": "1.2.3.4",
-      "oil": "azure"
+      "oil": "netflow"
     }
   ]
 }`
@@ -448,4 +454,13 @@ func testPdnsLookup(t *testing.T) {
 
 	result := FormatFakeulaResponse(pdnsResponse)
 	printResults(result.Data)
+}
+
+func prettyPrint(label string, v interface{}) {
+	bytes, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Printf("Error marshaling %s: %v\n", label, err)
+		return
+	}
+	fmt.Printf("%s:\n%s\n", label, string(bytes))
 }

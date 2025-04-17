@@ -35,15 +35,60 @@ type FakeulaEntry struct {
 }
 
 // OilInfo
+// Lots of different sources and possible nested data, so omitempty is added to the end of each possible field to help with organization
 type OilInfo struct {
-	Timestamp     string `json:"timestamp"`
-	UserPrincipal string `json:"userPrincipalName"`
-	DisplayName   string `json:"displayName"`
-	ClientIP      string `json:"clientIp"`
-	ClientASNOrg  string `json:"clientAsOrg"`
-	EventType     string `json:"eventType"`
-	Outcome       string `json:"outcome"`
-	Message       string `json:"message"`
+	Timestamp     string `json:"timestamp,omitempty"`
+	UserPrincipal string `json:"userPrincipalName,omitempty"`
+	DisplayName   string `json:"displayName,omitempty"`
+	ClientIP      string `json:"clientIp,omitempty"`
+	ClientASNOrg  string `json:"clientAsOrg,omitempty"`
+	EventType     string `json:"eventType,omitempty"`
+	Outcome       string `json:"outcome,omitempty"`
+	Message       string `json:"message,omitempty"`
+
+	// Optional fields from Okta, Helios, Netflow, and Prisma
+
+	// Okta
+	DisplayMessage string `json:"displayMessage"`
+
+	// Helios
+	ObserverHostname                string   `json:"observerHostname,omitempty"`
+	SuricataSignature               string   `json:"suricataSignature,omitempty"`
+	SourcePort                      string   `json:"sourcePort,omitempty"`
+	SourceThreatClassification      string   `json:"sourceThreatClassification,omitempty"`
+	SourceThreatService             string   `json:"sourceThreatService,omitempty"`
+	DestinationThreatClassification string   `json:"destinationThreatClassification,omitempty"`
+	DestinationThreatService        string   `json:"destinationThreatService,omitempty"`
+	Pipeline                        string   `json:"pipeline,omitempty"`
+	Tags                            []string `json:"tags,omitempty"`
+
+	// Prisma
+	NetworkProtocol    string `json:"networkProtocol,omitempty"`
+	Application        string `json:"application,omitempty"`
+	RuleName           string `json:"ruleName,omitempty"`
+	EventSequence      string `json:"eventSequence,omitempty"`
+	EventAction        string `json:"eventAction,omitempty"`
+	SourcePackets      string `json:"sourcePackets,omitempty"`
+	SourceBytes        string `json:"sourceBytes,omitempty"`
+	DestinationPackets string `json:"destinationPackets,omitempty"`
+	DestinationBytes   string `json:"destinationBytes,omitempty"`
+	Transport          string `json:"transport,omitempty"`
+
+	// Netflow
+	EventStart string `json:"eventStart,omitempty"`
+	EventEnd   string `json:"eventEnd,omitempty"`
+
+	// geo-as org info
+	SourceASNOrg  string `json:"sourceASNOrg,omitempty"`
+	SourceASN     string `json:"sourceASN,omitempty"`
+	SourceCountry string `json:"sourceCountry,omitempty"`
+	SourceCity    string `json:"sourceCity,omitempty"`
+
+	// Destination info (can apply to Helios/Prisma/Netflow)
+	DestinationIP   string `json:"destinationIP,omitempty"`
+	DestinationPort string `json:"destinationPort,omitempty"`
+	DestinationASN  string `json:"destinationASN,omitempty"`
+	DestinationOrg  string `json:"destinationOrg,omitempty"`
 }
 
 // ClientInfo represents network client information
@@ -269,7 +314,13 @@ func getStructureTypes(entry *FakeulaEntry) []string {
 // ------------------------------------------------Helper functions to parse nested data for each endpoint in FAKEula----------------------------------------------
 func parseOil(entryMap map[string]interface{}) *OilInfo {
 	oil := &OilInfo{
-		Timestamp:     getString(entryMap, "timestamp"),
+		// Added @timestamp fallback for Helios lookup
+		Timestamp: func() string {
+			if ts := getString(entryMap, "timestamp"); ts != "" {
+				return ts
+			}
+			return getString(entryMap, "@timestamp")
+		}(),
 		UserPrincipal: getString(entryMap, "userPrincipalName"),
 		DisplayName:   getString(entryMap, "displayName"),
 		ClientIP:      getString(entryMap, "callerIpAddress"),
@@ -279,31 +330,159 @@ func parseOil(entryMap map[string]interface{}) *OilInfo {
 		Message:       "",
 	}
 
-	// Get Client ASN Org if available
+	// Client IP & ASN org
 	if client, ok := entryMap["client"].(map[string]interface{}); ok {
 		oil.ClientASNOrg = getString(client, "as_org")
+		if ip := getString(client, "ipAddress"); ip != "" {
+			oil.ClientIP = ip
+		}
 	}
 
-	// Try Azure/Okta-style event block
+	// actor block (Okta)
+	if actor, ok := entryMap["actor"].(map[string]interface{}); ok {
+		oil.UserPrincipal = getString(actor, "alternateId")
+		oil.DisplayName = getString(actor, "displayName")
+	}
+
+	// displayMessage (Okta fallback)
+	if msg := getString(entryMap, "displayMessage"); msg != "" {
+		oil.Message = msg
+		oil.DisplayMessage = msg
+	}
+
+	// event block
 	if event, ok := entryMap["event"].(map[string]interface{}); ok {
 		oil.EventType = getString(event, "type")
 		oil.Outcome = getString(event, "outcome")
-		oil.Message = getString(event, "message") // fallback for alerts
+		if oil.Message == "" {
+			oil.Message = getString(event, "message")
+		}
+		oil.EventSequence = getString(event, "sequence")
+		oil.EventAction = getString(event, "action")
+		oil.EventStart = getString(event, "start")
+		oil.EventEnd = getString(event, "end")
 	}
 
-	// Special handling for Okta logout message
-	if msg := getString(entryMap, "displayMessage"); msg != "" {
-		oil.Message = msg
+	// Suricata
+	if suricata, ok := entryMap["Suricata"].(map[string]interface{}); ok {
+		oil.SuricataSignature = getString(suricata, "Signature")
 	}
 
-	// Return nil if there's no relevant oil data
-	if oil.Timestamp == "" && oil.UserPrincipal == "" && oil.DisplayName == "" && oil.ClientIP == "" {
+	// observer.hostname
+	if observer, ok := entryMap["observer"].(map[string]interface{}); ok {
+		oil.ObserverHostname = getString(observer, "hostname")
+	}
+
+	// rule (Prisma)
+	if rule, ok := entryMap["rule"].(map[string]interface{}); ok {
+		oil.RuleName = getString(rule, "name")
+	}
+
+	// transport (Prisma)
+	if network, ok := entryMap["network"].(map[string]interface{}); ok {
+		oil.NetworkProtocol = getString(network, "protocol")
+		oil.Application = getString(network, "application")
+		oil.Transport = getString(network, "transport")
+	}
+
+	// source (Prisma)
+	if source, ok := entryMap["source"].(map[string]interface{}); ok {
+		oil.SourcePackets = getString(source, "packets")
+		oil.SourceBytes = getString(source, "bytes")
+	}
+
+	// destination (Prisma)
+	if dest, ok := entryMap["destination"].(map[string]interface{}); ok {
+		oil.DestinationPackets = getString(dest, "packets")
+		oil.DestinationBytes = getString(dest, "bytes")
+	}
+
+	// network info
+	if network, ok := entryMap["network"].(map[string]interface{}); ok {
+		oil.NetworkProtocol = getString(network, "protocol")
+		oil.Application = getString(network, "application")
+	}
+
+	// source block
+	if source, ok := entryMap["source"].(map[string]interface{}); ok {
+		if ip := getString(source, "ip"); ip != "" && oil.ClientIP == "" {
+			oil.ClientIP = ip
+		}
+		oil.SourcePort = getString(source, "port")
+
+		if geo, ok := source["geo"].(map[string]interface{}); ok {
+			oil.SourceCountry = getString(geo, "country_iso_code")
+			oil.SourceCity = getString(geo, "city_name")
+		}
+		if as, ok := source["as"].(map[string]interface{}); ok {
+			if number, ok := as["number"]; ok && number != nil {
+				oil.SourceASN = fmt.Sprintf("%v", number)
+			}
+			if org, ok := as["organization"].(map[string]interface{}); ok {
+				oil.SourceASNOrg = getString(org, "name")
+			}
+		}
+		if threat, ok := source["threat"].(map[string]interface{}); ok {
+			if indicator, ok := threat["indicator"].(map[string]interface{}); ok {
+				oil.SourceThreatClassification = getString(indicator, "Classification")
+				oil.SourceThreatService = getString(indicator, "Service_Name")
+			}
+		}
+	}
+
+	// destination block
+	if destination, ok := entryMap["destination"].(map[string]interface{}); ok {
+		oil.DestinationIP = getString(destination, "ip")
+		oil.DestinationPort = getString(destination, "port")
+
+		if as, ok := destination["as"].(map[string]interface{}); ok {
+			if number, ok := as["number"]; ok && number != nil {
+				oil.DestinationASN = fmt.Sprintf("%v", number)
+			}
+			if org, ok := as["organization"].(map[string]interface{}); ok {
+				oil.DestinationOrg = getString(org, "name")
+			}
+		}
+		if threat, ok := destination["threat"].(map[string]interface{}); ok {
+			if indicator, ok := threat["indicator"].(map[string]interface{}); ok {
+				oil.DestinationThreatClassification = getString(indicator, "Classification")
+				oil.DestinationThreatService = getString(indicator, "Service_Name")
+			}
+		}
+	}
+
+	// megaoil pipeline
+	if megaoil, ok := entryMap["megaoil"].(map[string]interface{}); ok {
+		oil.Pipeline = getString(megaoil, "pipeline")
+	}
+
+	// tags (string slice)
+	if tagsRaw, ok := entryMap["tags"].([]interface{}); ok {
+		for _, tag := range tagsRaw {
+			if s, ok := tag.(string); ok {
+				oil.Tags = append(oil.Tags, s)
+			}
+		}
+	}
+
+	// minimal data check
+	if oil.Timestamp == "" &&
+		oil.ClientIP == "" &&
+		oil.UserPrincipal == "" &&
+		oil.DisplayName == "" &&
+		oil.ObserverHostname == "" &&
+		oil.Message == "" &&
+		oil.SuricataSignature == "" &&
+		oil.EventStart == "" &&
+		oil.NetworkProtocol == "" &&
+		oil.SourceASNOrg == "" {
 		return nil
 	}
 
 	return oil
 }
 
+// We can probably refactor this to just include it in the parseOil function
 func parseClient(entryMap map[string]interface{}) *ClientInfo {
 	// Check if the "client" field exists and is a map
 	if client, ok := entryMap["client"].(map[string]interface{}); ok {
