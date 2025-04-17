@@ -33,7 +33,7 @@ function IOCTable({ results }) {
                 const geo = entry.geo || {};
                 const ldap = entry.ldap || {};
                 const pdns = entry.pdns || {};
-
+                const process = entry.cbr || {};
                 return (
                   <div key={idx} className="structured-entry">
                     {/* Grouped fields by type */}
@@ -128,6 +128,67 @@ function IOCTable({ results }) {
                             {renderField("End", a.end)}
                           </div>
                         ))}
+                      </>
+                    )}
+
+                    {structureType === "process" && (
+                      <>
+                        {renderField("Command Line", process.command_line)}
+                        {renderField("Entity ID", process.entity_id)}
+                        {renderField("Executable", process.executable)}
+                        {renderField("Name", process.name)}
+                        {renderField("PID", process.pid)}
+                        {renderField("Start Time", process.start)}
+                        {renderField("Uptime", process.uptime)}
+                    
+                        {/* Parent Process Information */}
+                        {process.parent && (
+                          <>
+                            <div className="field-row"><strong>Parent Process:</strong></div>
+                            {renderField("Parent Name", process.parent.name)}
+                            {renderField("Parent PID", process.parent.pid)}
+                            {renderField("Parent Entity ID", process.parent.entity_id)}
+                          </>
+                        )}
+                    
+                        {/* User Information */}
+                        {process.user && (
+                          <>
+                            <div className="field-row"><strong>User Information:</strong></div>
+                            {renderField("User Name", process.user.name)}
+                          </>
+                        )}
+                    
+                        {/* Host Information */}
+                        {process.host && (
+                          <>
+                            <div className="field-row"><strong>Host Information:</strong></div>
+                            {renderField("Host Name", process.host.name)}
+                            {renderField("Host Type", process.host.type)}
+                            {process.host.ip?.length > 0 && (
+                              <div className="field-row">
+                                <strong>Host IPs:</strong> {process.host.ip.join(", ")}
+                              </div>
+                            )}
+                            {renderField("Host OS", process.host.os?.family)}
+                          </>
+                        )}
+                    
+                        {/* Code Signature */}
+                        {process.code_signature && (
+                          <>
+                            <div className="field-row"><strong>Code Signature:</strong></div>
+                            {renderField("Code Signed", process.code_signature.exists ? "Yes" : "No")}
+                          </>
+                        )}
+                    
+                        {/* Labels */}
+                        {process.labels && (
+                          <>
+                            <div className="field-row"><strong>Labels:</strong></div>
+                            {renderField("URL", process.labels.url)}
+                          </>
+                        )}
                       </>
                     )}
                   </div>

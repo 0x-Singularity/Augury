@@ -497,7 +497,10 @@ func QueryCBR(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// No specific parser for CBR, return raw data
+	//parse the CBR data
+	log.Printf("CBR Data: %v", cbrData)
+	parsed := parser.FormatFakeulaResponse(cbrData)
+	log.Printf("Parsed CBR Data: %v", parsed)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(cbrData)
+	json.NewEncoder(w).Encode(parsed)
 }

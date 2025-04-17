@@ -5,8 +5,8 @@ const LOOKUP_LINKS = (ioc) => ({
   LDAP: `/view?source=ldap&ioc=${encodeURIComponent(ioc)}`,
   GeoIP: `/view?source=geo&ioc=${encodeURIComponent(ioc)}`,
   Binary: `/view?source=binary&ioc=${encodeURIComponent(ioc)}`,
-  VPN: `/view?source=vpn&ioc=${encodeURIComponent(ioc)}`,
   Shodan: `https://www.shodan.io/search?query=${encodeURIComponent(ioc)}`,
+  VPN: `http://localhost:8080/api/vpn?ioc=${encodeURIComponent(ioc)}`, // Updated to link directly to the raw JSON
   Censys: `https://search.censys.io/search?resource=hosts&q=${encodeURIComponent(ioc)}`,
   Spur: `https://spur.us/search?q=${encodeURIComponent(ioc)}`,
   IP2Proxy: `https://www.ip2proxy.com/demo/${encodeURIComponent(ioc)}`,
@@ -50,7 +50,6 @@ function Results({ results }) {
                   <a href={`#`} style={{ color: "#fa8b8b", textDecoration: "underline" }}>{ioc}</a>
                 </td>
                 <td>
-                  <a href={lookups.CBR} target="_blank" rel="noopener noreferrer">CBR</a><br />
                   <a href={lookups.PDNS} target="_blank" rel="noopener noreferrer">PDNS</a><br />
                   <a href={lookups.LDAP} target="_blank" rel="noopener noreferrer">LDAP</a><br />
                   <a href={lookups.GeoIP} target="_blank" rel="noopener noreferrer">GeoIP</a><br />
