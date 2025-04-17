@@ -35,6 +35,7 @@ type FakeulaEntry struct {
 }
 
 // OilInfo
+// Lots of different sources and possible nested data, so omitempty is added to the end of each possible field to help with organization
 type OilInfo struct {
 	Timestamp     string `json:"timestamp,omitempty"`
 	UserPrincipal string `json:"userPrincipalName,omitempty"`
@@ -77,13 +78,13 @@ type OilInfo struct {
 	EventStart string `json:"eventStart,omitempty"`
 	EventEnd   string `json:"eventEnd,omitempty"`
 
-	// Common geo-as org info
+	// geo-as org info
 	SourceASNOrg  string `json:"sourceASNOrg,omitempty"`
 	SourceASN     string `json:"sourceASN,omitempty"`
 	SourceCountry string `json:"sourceCountry,omitempty"`
 	SourceCity    string `json:"sourceCity,omitempty"`
 
-	// Destination info (can also apply to Helios/Prisma/Netflow)
+	// Destination info (can apply to Helios/Prisma/Netflow)
 	DestinationIP   string `json:"destinationIP,omitempty"`
 	DestinationPort string `json:"destinationPort,omitempty"`
 	DestinationASN  string `json:"destinationASN,omitempty"`
@@ -481,6 +482,7 @@ func parseOil(entryMap map[string]interface{}) *OilInfo {
 	return oil
 }
 
+// We can probably refactor this to just include it in the parseOil function
 func parseClient(entryMap map[string]interface{}) *ClientInfo {
 	// Check if the "client" field exists and is a map
 	if client, ok := entryMap["client"].(map[string]interface{}); ok {
