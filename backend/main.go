@@ -41,7 +41,7 @@ func main() {
 	// Initialize Azure SQL database connection
 	err = models.ConnectDB()
 	if err != nil {
-		log.Fatal("Failed to connect to Azure SQL database:", err)
+		log.Fatal("Failed to connect to database:", err)
 	}
 
 	router := mux.NewRouter()

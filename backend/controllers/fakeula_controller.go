@@ -22,10 +22,7 @@ func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call FAKEula extractor
-	extractURL := os.Getenv("FAKEULA_EXTRACT_URL")
-	if extractURL == "" {
-		extractURL = os.Getenv("FAKEULA_API_URL") + "extract"
-	}
+	extractURL := os.Getenv("FAKEULA_API_URL") + "extract"
 	req, err := http.NewRequest("POST", extractURL, bytes.NewBuffer(body))
 	if err != nil {
 		http.Error(w, "Failed to create extract request", http.StatusInternalServerError)
@@ -72,6 +69,28 @@ func ExtractFromText(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// cbr response struct to parse the CBR response
+type cbrResponse struct {
+	Data []struct {
+		Process struct {
+			Hash struct {
+				MD5 string `json:"md5"`
+			} `json:"hash"`
+		} `json:"process"`
+	} `json:"data"`
+}
+
+// helper
+func md5FromCBR(raw json.RawMessage) (string, error) {
+	var resp cbrResponse
+	if err := json.Unmarshal(raw, &resp); err != nil {
+		return "", err
+	}
+	if len(resp.Data) > 0 {
+		return resp.Data[0].Process.Hash.MD5, nil
+	}
+	return "", nil // not found
+}
 func extractIOCsFromResponse(response map[string]interface{}) []string {
 	iocs := []string{}
 	data, ok := response["data"].([]interface{})
@@ -100,11 +119,30 @@ func queryFakeulaForIOC(ioc, userName string) (map[string]interface{}, error) {
 
 	rawResponse := make(map[string]interface{})
 
-	//--- Query Binary ---
-	binaryURL := fmt.Sprintf("%scbr/binary/%s", baseURL, ioc)
+	//Query CBR first (to look for a hash) ---
+	cbrURL := fmt.Sprintf("%scbr/%s", baseURL, ioc)
+	cbrData, err := fetchJSON(client, cbrURL, authUser, authPass)
+	if err != nil {
+		log.Printf("CBR query failed for %s: %v", ioc, err)
+	} else {
+		rawResponse["cbr"] = cbrData
+	}
+
+	hashToQuery := ioc // fallback
+	if cbrData != nil {
+		if b, _ := json.Marshal(cbrData); len(b) > 0 {
+			if md5, _ := md5FromCBR(b); md5 != "" {
+				hashToQuery = md5
+				log.Printf("Using MD5 from CBR (%s) for binary lookup", md5)
+			}
+		}
+	}
+	rawResponse["hash"] = hashToQuery
+	// Now hit the Binary endpoint (with hash or ioc) ---
+	binaryURL := fmt.Sprintf("%scbr/binary/%s", baseURL, hashToQuery)
 	binaryData, err := fetchJSON(client, binaryURL, authUser, authPass)
 	if err != nil {
-		log.Printf("Binary query failed for %s: %v", ioc, err)
+		log.Printf("Binary query failed for %s: %v", hashToQuery, err)
 	} else {
 		rawResponse["binary"] = binaryData
 	}

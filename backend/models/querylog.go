@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	_ "github.com/microsoft/go-mssqldb" // Azure SQL driver
+	_ "github.com/lib/pq"
 )
 
 // QueryLog represents a lookup log entry
@@ -19,87 +19,76 @@ type QueryLog struct {
 	UserName    string    `json:"user_name"`
 }
 
-// DB connection (initialized once)
 var db *sql.DB
 
-// ConnectDB initializes the database connection
+// ConnectDB initializes the PostgreSQL connection
 func ConnectDB() error {
-	// Fetch connection parameters from environment variables
-	server := os.Getenv("AZURE_SQL_SERVER")
-	database := os.Getenv("AZURE_SQL_DATABASE")
-	user := os.Getenv("AZURE_SQL_USER")
-	password := os.Getenv("AZURE_SQL_PASSWORD")
+	host := os.Getenv("DB_HOST")
+	port := os.Getenv("DB_PORT")
+	user := os.Getenv("DB_USER")
+	password := os.Getenv("DB_PASS")
+	dbname := os.Getenv("DB_NAME")
 
-	// Azure SQL connection string
-	connStr := fmt.Sprintf("sqlserver://%s:%s@%s?database=%s&encrypt=true",
-		user, password, server, database)
+	dsn := fmt.Sprintf(
+		"host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname,
+	)
 
-	// Open database connection
 	var err error
-	db, err = sql.Open("sqlserver", connStr)
+	db, err = sql.Open("postgres", dsn)
 	if err != nil {
-		log.Println("Error opening database:", err)
-		return err
+		return fmt.Errorf("open db: %w", err)
+	}
+	//pool tuning
+	db.SetMaxOpenConns(20)                  // total connections allowed (0 = unlimited)
+	db.SetMaxIdleConns(10)                  // idle (kept‑alive) connections
+	db.SetConnMaxIdleTime(30 * time.Minute) // recycle idle conns after 30 min
+	db.SetConnMaxLifetime(2 * time.Hour)
+	if err = db.Ping(); err != nil {
+		return fmt.Errorf("ping db: %w", err)
 	}
 
-	// Verify connection
-	err = db.Ping()
-	if err != nil {
-		log.Println("Error connecting to database:", err)
-		return err
-	}
-
-	log.Println("Connected to Azure SQL successfully!")
+	log.Println("Connected to PostgreSQL successfully!")
 	return nil
 }
 
 // InsertQueryLog adds a new IOC lookup record
 func InsertQueryLog(ioc string, resultCount int, userName string) error {
-	query := `INSERT INTO QueryLogs (ioc, last_lookup, result_count, user_name) 
-	          VALUES (@ioc, GETDATE(), @resultCount, @userName)`
-
-	_, err := db.Exec(query,
-		sql.Named("ioc", ioc),
-		sql.Named("resultCount", resultCount),
-		sql.Named("userName", userName),
-	)
-
+	const stmt = `
+		INSERT INTO ioc_query_log (ioc, last_lookup, result_count, user_name)
+		VALUES ($1, now(), $2, $3);
+	`
+	_, err := db.Exec(stmt, ioc, resultCount, userName)
 	if err != nil {
-		log.Println("Error inserting query log:", err)
+		return fmt.Errorf("insert query log: %w", err)
 	}
-	return err
+	return nil
 }
 
-// GetQueryLog retrieves a log entry by IOC
+// GetQueryLog returns the most‑recent previous log for an IOC
 func GetQueryLog(ioc string) ([]QueryLog, error) {
-	query := `SELECT log_id, ioc, last_lookup, result_count, user_name
-	FROM QueryLogs
-	WHERE ioc = @ioc
-	ORDER BY last_lookup DESC
-	OFFSET 1 ROWS FETCH NEXT 1 ROWS ONLY;`
+	const stmt = `
+		SELECT id, ioc, last_lookup, result_count, user_name
+		FROM   ioc_query_log
+		WHERE  ioc = $1
+		ORDER  BY last_lookup DESC
+		OFFSET 1           -- skip latest
+		LIMIT  1;          -- return the previous
+	`
 
-	rows, err := db.Query(query, sql.Named("ioc", ioc))
+	rows, err := db.Query(stmt, ioc)
 	if err != nil {
-		log.Println("Error querying query logs:", err)
-		return nil, err
+		return nil, fmt.Errorf("select logs: %w", err)
 	}
 	defer rows.Close()
 
 	var logs []QueryLog
 	for rows.Next() {
-		var logEntry QueryLog
-		if err := rows.Scan(&logEntry.LogID, &logEntry.IOC, &logEntry.LastLookup, &logEntry.ResultCount, &logEntry.UserName); err != nil {
-			log.Println("Error scanning query log row:", err)
-			return nil, err
+		var q QueryLog
+		if err := rows.Scan(&q.LogID, &q.IOC, &q.LastLookup, &q.ResultCount, &q.UserName); err != nil {
+			return nil, fmt.Errorf("scan row: %w", err)
 		}
-		logs = append(logs, logEntry)
+		logs = append(logs, q)
 	}
-
-	if err := rows.Err(); err != nil {
-		log.Println("Error iterating query log rows:", err)
-		return nil, err
-	}
-
-	// Return an empty slice instead of nil if no results found
-	return logs, nil
+	return logs, rows.Err()
 }

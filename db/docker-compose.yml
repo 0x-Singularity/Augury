@@ -1,0 +1,16 @@
+# docker-compose.yml  
+# db/postgres-compose.yml
+
+
+services:
+  pg:
+    image: postgres:16-alpine          # 60 MB image, cross‑platform
+    container_name: local-postgres
+    environment:
+      POSTGRES_DB:    augury
+      POSTGRES_USER:  augury
+      POSTGRES_PASSWORD: changeme
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./init:/docker-entrypoint-initdb.d   # *.sql run on first startup

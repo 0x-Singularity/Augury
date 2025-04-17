@@ -41,6 +41,7 @@ function Results({ results }) {
             const binary = entry.binary?.data || [];
             const assets = entry.asset?.data || [];
             const securityLogs = entry.coxsight?.data || [];
+            const hash = entry.hash || "";
             const netflows = entry.netflow?.data || [];
             const logs = entry.query_log || [];
 
@@ -103,7 +104,13 @@ function Results({ results }) {
                   )}
                 </td>
 
-                <td>N/A</td>
+                <td>
+                  {hash ? (
+                    <code>{hash}</code>
+                  ) : (
+                    <em>None</em>
+                  )}
+                </td>
 
                 <td>
                   {netflows.length > 0 ? (
