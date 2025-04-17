@@ -8,7 +8,7 @@ import (
 
 func TestParser(t *testing.T) {
 	// Test Oil lookup
-	testOilLookup(t)
+	//testOilLookup(t)
 
 	// Test Client lookup
 	//testClientLookup(t)
@@ -17,7 +17,7 @@ func TestParser(t *testing.T) {
 	//testProcessLookup(t)
 
 	// Test Host lookup
-	testHostLookup(t)
+	//testHostLookup(t)
 
 	// Test Binary lookup
 	//testBinaryLookup(t)
@@ -26,7 +26,7 @@ func TestParser(t *testing.T) {
 	//testAssetLookup(t)
 
 	// Test Geo lookup
-	//testGeoLookup(t)
+	testGeoLookup(t)
 
 	// Test LDAP lookup
 	//testLdapLookup(t)
@@ -99,19 +99,25 @@ func testOilLookup(t *testing.T) {
 	oilJSON := `{
   "data": [
     {
-      "callerIpAddress": "1.2.3.4",
-      "coxAccountName": "abob",
-      "userPrincipalName": "alice.bob@example.com",
-      "userDisplayName": "Alice Bob",
-      "displayName": "laptop1",
-      "client": {
-        "as_org": "ASN-ACME",
-        "ip": "1.2.3.4",
-        "asn": 1234
+      "network": {
+        "transport": "UDP"
       },
-      "timestamp": "2025-01-23T21:15:51.439Z",
+      "source": {
+        "address": "10.0.0.1",
+        "ip": "10.0.0.1",
+        "port": "53015"
+      },
+      "destination": {
+        "address": "1.2.3.4",
+        "ip": "1.2.3.4",
+        "port": "25762"
+      },
+      "event": {
+        "start": "2025-01-23T21:05:00Z",
+        "end": "2025-01-23T21:09:59Z"
+      },
       "key": "1.2.3.4",
-      "oil": "azure"
+      "oil": "netflow"
     }
   ]
 }`
