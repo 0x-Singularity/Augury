@@ -1,0 +1,44 @@
+.results-container {
+  margin-top: 20px;
+}
+
+.source-block {
+  margin-bottom: 40px;
+  border-left: 4px solid #007acc;
+  padding-left: 16px;
+}
+
+.oil-header {
+  font-size: 1.5rem;
+  color: #007acc;
+  margin-bottom: 10px;
+  font-weight: bold;
+}
+
+.structure-label {
+  font-size: 1.2rem;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-weight: 500;
+}
+
+.structure-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.structure-table th,
+.structure-table td {
+  border: 1px solid #182130;
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.structure-table th {
+  background-color: #4c399e;
+}
+
+.structure-table tr:nth-child(even) {
+  background-color: #311664;
+}
