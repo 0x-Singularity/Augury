@@ -8,42 +8,29 @@ The results will be displayed in a table along with links to external vendors fo
 ## Project Structure
 
 ```bash
-augury/
-├── backend/
-│   ├── main.go
-│   ├── go.mod
-│   └── templates/
-│       └── index.html
-└── frontend/
-    └── static/
-        ├── css/
-        │   └── styles.css
-        ├── js/
-        │   └── scripts.js
-        └── images/
-            └── search.svg
+Augury/
+├─ backend/                 ← Go API (handlers, models, parser, main.go)
+├─ client/                  ← React front‑end (vite or CRA)
+├─ db/
+│  ├─ docker-compose.yml    ← Postgres service
+│  └─ init/                 ← 01_create_tables.sql, 02_seed_data.sql …
+├─ fakeula/                 ← Count FAKEula dummy API bundle
+└─ docs/SETUP.md            ← this guide 
+
 
 ```
 
-- **backend**
-  - `main.go`: The main Go application.
-  - `templates/`: Contains `index.html` and any additional templates.
-  - `go.mod`: Go module file.
-- **frontend**
-  - `static/css/styles.css`: Global stylesheet (includes Poppins font usage, search bar styling, etc.).
-  - `static/js/scripts.js`: JavaScript for front-end interactions.
-  - `static/images/search.svg`: Feather Icons search icon.
 
 ## Prerequisites
 
 1. **Go** (I'm using version 1.23.2)
 2. **Python** (for Count Fakeula)
-3. **Gorilla Mux** for routing:
-   ```bash
-   go get github.com/gorilla/mux
-   ```
-4. **Air** (hot reloading webserver) - Repo: https://github.com/air-verse/air
+3. **Node.js** https://nodejs.org/en
+4.**Docker Desktop** (Win/mac) or **Docker Engine** (Linux)
+5. **Environment Files**
+  `cp .env.example .env`               # root: Fakeula + DB vars for Go
 
+6. **Air** https://github.com/air-verse/air
 Using Air for Hot Reloading
 Air is a Go development tool that automatically rebuilds and restarts your application when you modify your Go files, saving you from manually restarting the server after every change.
 
@@ -102,31 +89,35 @@ python main.py -p 7000
 
 This starts the API on port 7000
 
-4. **Start the Augury Backend**
+4. **Start the Docker Database**
+# run from repo root
+```bash
+docker compose -f db/docker-compose.yml up -d pg
+```
+verify with
+```bash 
+docker compose -f db/docker-compose.yml ps     # should show "running"
+```
+
+5. **Start the Augury Backend**
 
 - Navigate to the backend directory of the main Augury project
 - Run the following command:
 
 ```bash
+cd backend 
+go mod tidy #fetch dependancies first time only
 go run ./main.go
 ```
 
-This start the Augury backend server
 
-5. **Test the Application**
-
-- Open your browser and go to:
+6. **Start Frontend Server**
 
 ```bash
-http:localhost:8080
-```
-
-After we introduced react, instead of navigating to the backend directory and running main.go,
-we now navigate to the frontend directory and run
-
-```bash
+cd frontend
+npm imstall #fetch deps
 npm start
 ```
-
+Local Host 3000 should now be hosting the webserver and is ready to use.
 Enter an IOC into the search bar and click the magnifying glass
-You should recieve JSON as response
+
