@@ -177,25 +177,31 @@ func queryFakeulaForIOC(ioc, userName string) (map[string]interface{}, error) {
 	// --- Get PDNS Result Count ---
 	resultCount := fetchPDNSResultCount(ioc)
 
-	// --- Log the query ---
-	if err := models.InsertQueryLog(ioc, resultCount, userName); err != nil {
-		log.Println("Failed to log IOC lookup:", err)
+	// If AUGURY_SKIP_DB=1, don’t touch the real DB at all
+	if os.Getenv("AUGURY_SKIP_DB") != "1" {
+		// --- Log the query ---
+		if err := models.InsertQueryLog(ioc, resultCount, userName); err != nil {
+			log.Println("Failed to log IOC lookup:", err)
+		}
+
+		// --- Retrieve and attach query logs ---
+		logEntry, err := models.GetQueryLog(ioc)
+		if err != nil {
+			log.Println("Failed to retrieve IOC log:", err)
+		}
+		if logEntry != nil {
+			var genericLogs []interface{}
+			tmp, _ := json.Marshal(logEntry)
+			_ = json.Unmarshal(tmp, &genericLogs)
+			rawResponse["query_log"] = genericLogs
+		} else {
+			rawResponse["query_log"] = []interface{}{}
+		}
+		return rawResponse, nil
 	}
 
-	// --- Retrieve and attach query logs ---
-	logEntry, err := models.GetQueryLog(ioc)
-	if err != nil {
-		log.Println("Failed to retrieve IOC log:", err)
-	}
-	if logEntry != nil {
-		var genericLogs []interface{}
-		tmp, _ := json.Marshal(logEntry)
-		_ = json.Unmarshal(tmp, &genericLogs)
-		rawResponse["query_log"] = genericLogs
-	} else {
-		rawResponse["query_log"] = []interface{}{}
-	}
-
+	//SKIP DB Logging for testing
+	rawResponse = map[string]interface{}{}
 	return rawResponse, nil
 }
 
@@ -220,7 +226,8 @@ func fetchJSON(client *http.Client, url, user, pass string) (interface{}, error)
 }
 
 func fetchPDNSResultCount(ioc string) int {
-	url := fmt.Sprintf("http://localhost:7000/pdns/%s/_summary", ioc)
+	baseURL := os.Getenv("FAKEULA_API_URL")
+	url := fmt.Sprintf(baseURL+"/pdns/%s/_summary", ioc)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println("Failed to create PDNS summary request:", err)
