@@ -125,3 +125,27 @@ func TestExtractFromText_Integration(t *testing.T) {
 	log.Println("TestExtractFromText_Integration passed")
 	t.Log("response body:", pretty.Sprint(body))
 }
+
+func Test_md5FromCBR_Valid(t *testing.T) {
+	// CBR JSON containing an MD5
+	raw := json.RawMessage(`{
+		"data": [
+			{
+				"process": {
+					"hash": {
+						"md5": "abcd1234"
+					}
+				}
+			}
+		]
+	}`)
+
+	got, err := controllers.MD5FromCBR(raw)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	want := "abcd1234"
+	if got != want {
+		t.Errorf("md5FromCBR() = %q; want %q", got, want)
+	}
+}

@@ -81,7 +81,7 @@ type cbrResponse struct {
 }
 
 // helper
-func md5FromCBR(raw json.RawMessage) (string, error) {
+func MD5FromCBR(raw json.RawMessage) (string, error) {
 	var resp cbrResponse
 	if err := json.Unmarshal(raw, &resp); err != nil {
 		return "", err
@@ -131,7 +131,7 @@ func queryFakeulaForIOC(ioc, userName string) (map[string]interface{}, error) {
 	hashToQuery := ioc // fallback
 	if cbrData != nil {
 		if b, _ := json.Marshal(cbrData); len(b) > 0 {
-			if md5, _ := md5FromCBR(b); md5 != "" {
+			if md5, _ := MD5FromCBR(b); md5 != "" {
 				hashToQuery = md5
 				log.Printf("Using MD5 from CBR (%s) for binary lookup", md5)
 			}
