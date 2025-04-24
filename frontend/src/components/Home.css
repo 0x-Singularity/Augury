@@ -1,0 +1,52 @@
+.ioc-tabs {
+    margin-top: 30px;
+  }
+  
+  .tab-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .tab-button {
+    padding: 6px 14px;
+    border: none;
+    border-radius: 8px;
+    background: #333;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+  }
+  
+  .tab-button.active {
+    background: #555;
+  }
+  
+  .tab-button.new {
+    background: transparent;
+    color: #5ccc84;
+    border: 2px dashed #5ccc84;
+  }
+  
+  .tab-content {
+    margin-top: 20px;
+  }
+  
+  .ioc-input {
+    padding: 8px;
+    width: 60%;
+    margin-right: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+  }
+  
+  .result-box {
+    margin-top: 15px;
+    background-color: #1c1c1c;
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: left;
+  }
+  
