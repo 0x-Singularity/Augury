@@ -27,6 +27,7 @@ Augury/
 2. **Python** (for Count Fakeula)
 3. **Node.js** https://nodejs.org/en
 4.**Docker Desktop** (Win/mac) or **Docker Engine** (Linux)
+   
 5. **Environment Files**
   `cp .env.example .env`               # root: Fakeula + DB vars for Go
 
