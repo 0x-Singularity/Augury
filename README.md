@@ -108,7 +108,7 @@ docker compose -f db/docker-compose.yml ps     # should show "running"
 ```bash
 cd backend 
 go mod tidy #fetch dependancies first time only
-go run ./main.go
+go run main.go
 ```
 
 
